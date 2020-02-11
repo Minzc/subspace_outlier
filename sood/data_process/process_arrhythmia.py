@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+#
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+from scipy.io import loadmat
+
+annots = loadmat('')
