@@ -5,6 +5,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 from scipy.io import loadmat
 from sood.util import PathManager, Consts
+from sood.log import getLogger
 import json
 from collections import defaultdict
 
@@ -15,12 +16,14 @@ from collections import defaultdict
 # Class 0: 386
 # ==================
 
+logger = getLogger(__name__)
+
 path_manager = PathManager()
 
 arrhythmia = loadmat(f'{path_manager.dataset}/arrhythmia/arrhythmia.mat')
-print(arrhythmia.keys())
-print(arrhythmia['X'].shape)
-print(arrhythmia['y'].shape)
+logger.info(arrhythmia.keys())
+logger.info(arrhythmia['X'].shape)
+logger.info(arrhythmia['y'].shape)
 
 data = []
 for i in arrhythmia['X']:
@@ -36,4 +39,4 @@ with open(output_file, "w") as w:
     for d in data:
         w.write(f"{json.dumps(d)}\n")
 
-print(f"Output Path: {output_file}")
+logger.info(f"Output Path: {output_file}")
