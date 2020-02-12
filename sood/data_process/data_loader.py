@@ -19,6 +19,7 @@ class Dataset:
         path_manager = PathManager()
         self.dataset_name = dataset
         self.file_path = f"{path_manager.dataset}/{dataset}/{dataset}.json"
+        self.mat_file_path = f"{path_manager.dataset}/{dataset}/{dataset}.mat"
 
 
 class DataLoader:

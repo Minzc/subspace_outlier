@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 from scipy.io import loadmat
+from sood.data_process.data_loader import Dataset
+
 from sood.util import PathManager, Consts
 from sood.log import getLogger
 import json
@@ -19,8 +21,9 @@ from collections import defaultdict
 logger = getLogger(__name__)
 
 path_manager = PathManager()
+dataset = Dataset(Dataset.ARRHYTHMIA)
 
-arrhythmia = loadmat(f'{path_manager.dataset}/arrhythmia/arrhythmia.mat')
+arrhythmia = loadmat(dataset.mat_file_path)
 logger.info(arrhythmia.keys())
 logger.info(arrhythmia['X'].shape)
 logger.info(arrhythmia['y'].shape)
@@ -34,9 +37,9 @@ for i in arrhythmia['X']:
 for idx, i in enumerate(arrhythmia['y']):
     data[idx][Consts.LABEL] = int(i)
 
-output_file = f'{path_manager.dataset}/arrhythmia/arrhythmia.json'
-with open(output_file, "w") as w:
+
+with open(dataset.file_path, "w") as w:
     for d in data:
         w.write(f"{json.dumps(d)}\n")
 
-logger.info(f"Output Path: {output_file}")
+logger.info(f"Output Path: {dataset.file_path}")

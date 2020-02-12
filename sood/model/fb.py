@@ -47,4 +47,5 @@ if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
     X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
     fb = FB(1, 10, 2)
-    fb.run(X)
+    rst = fb.run(X)
+    logger.debug(f"Ensemble output {rst}")
