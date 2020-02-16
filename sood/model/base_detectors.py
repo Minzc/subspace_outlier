@@ -20,9 +20,13 @@ def normalize_z_score(score: np.array):
     # =========================================================
     mean = np.mean(score)
     std = np.std(score)
-    return (score - mean) / std
+    if std != 0:
+        return (score - mean) / std
+    else:
+        return score - mean
 
 class LOF:
+    NAME = "LOF"
     def __init__(self, neighbor, if_normalize):
         self.neighor = neighbor
         self.if_normalize = if_normalize
@@ -39,6 +43,7 @@ class LOF:
             return -self.lof.negative_outlier_factor_
 
 class kNN:
+    NAME = "kNN"
     def __init__(self, neighbor, if_normalize):
         self.neighbor = neighbor
         self.if_normalize = if_normalize
@@ -55,7 +60,7 @@ class kNN:
         else:
             return score
 
-if __name__ == '__main__':
+def test():
     import json
     from sood.util import PathManager, Consts
     import scipy.io as sio

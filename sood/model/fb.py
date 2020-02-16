@@ -18,14 +18,14 @@ logger = getLogger(__name__)
 
 
 class FB(AbstractModel):
-    def __init__(self, dim_start, dim_end, ensemble_size, aggregate_method, neighbor):
-        super().__init__(f"FB({dim_start}-{dim_end} Neighbor: {neighbor}))", aggregate_method)
+    def __init__(self, dim_start, dim_end, ensemble_size, aggregate_method, neighbor, base_model):
+        name = f"FB({dim_start}-{dim_end} Neighbor: {neighbor}))"
+        super().__init__(name, aggregate_method, base_model, neighbor)
         self.dim_start = dim_start
         self.dim_end = dim_end
         self.ensemble_size = ensemble_size
         self.aggregate_method = aggregate_method
-        self.lof = LOF(neighbor, self.if_normalize_score)
-        self.knn = kNN(neighbor, self.if_normalize_score)
+        np.random.seed(1)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
@@ -38,8 +38,7 @@ class FB(AbstractModel):
             _X = data_array[:, selected_features]
             logger.debug(f"Selected X: {_X.shape}")
             # Process selected dataset
-            # score = self.lof.fit(_X)
-            score = self.knn.fit(_X)
+            score = self.mdl.fit(_X)
             model_outputs.append(score)
             logger.debug(f"Outlier score shape: {score.shape}")
         return model_outputs
@@ -56,7 +55,7 @@ class FB(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
 
-    ENSEMBLE_SIZE = 200
+    ENSEMBLE_SIZE = 20
     EXP_NUM = 10
     X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
     dim = X.shape[1]
@@ -69,16 +68,17 @@ if __name__ == '__main__':
                        (1, int(dim / 10)),
                        (1, int(dim / 2)),
                        (int(dim / 2), dim)]:
+        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.COUNT_STD_THRESHOLD, neigh, kNN.NAME)
+
         start_ts = time.time()
-
-        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.COUNT_STD_THRESHOLD, neigh)
-        rst = fb.run(X)
-
-        logger.debug(f"Ensemble output {rst}")
-        logger.debug(f"Y {Y}")
-
         roc_aucs = []
+
         for i in range(EXP_NUM):
+            rst = fb.run(X)
+
+            logger.debug(f"Ensemble output {rst}")
+            logger.debug(f"Y {Y}")
+
             roc_auc = fb.compute_roc_auc(rst, Y)
             roc_aucs.append(roc_auc)
 
@@ -94,16 +94,17 @@ if __name__ == '__main__':
                        (1, int(dim / 2)),
                        (1, int(dim / 10)),
                        (int(dim / 2), dim)]:
+        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME)
+
         start_ts = time.time()
-
-        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh)
-        rst = fb.run(X)
-
-        logger.debug(f"Ensemble output {rst}")
-        logger.debug(f"Y {Y}")
-
         roc_aucs = []
+
         for i in range(EXP_NUM):
+            rst = fb.run(X)
+
+            logger.debug(f"Ensemble output {rst}")
+            logger.debug(f"Y {Y}")
+
             roc_auc = fb.compute_roc_auc(rst, Y)
             roc_aucs.append(roc_auc)
 

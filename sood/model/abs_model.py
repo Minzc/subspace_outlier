@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 from sklearn.metrics import roc_auc_score
+from sood.model.base_detectors import kNN, LOF
+
 from sood.log import getLogger
 import numpy as np
 
@@ -14,6 +16,10 @@ class Aggregator:
     COUNT_RANK_THRESHOLD = "count_rank_threshold"
     AVERAGE = "average"
     COUNT_STD_THRESHOLD = "count_std_threshold"
+
+    @classmethod
+    def supported_aggregate(cls):
+        return [cls.COUNT_RANK_THRESHOLD, cls.AVERAGE, cls.COUNT_STD_THRESHOLD]
 
     @staticmethod
     def count_std_threshold(model_outputs, threshold):
@@ -59,18 +65,27 @@ class Aggregator:
         logger.debug(f"Score size {len(scores)}")
         for model_output in model_outputs:
             for idx, score in enumerate(model_output):
+                assert np.isnan(scores[idx] + score) == False, (scores[idx], score, model_output)
                 scores[idx] += score
+
         for i in range(len(scores)):
             scores[i] = scores[i] / len(model_outputs)
+
         return scores
 
 
 class AbstractModel:
-    def __init__(self, name, aggregate_method):
+    def __init__(self, name, aggregate_method, base_model, neighbor):
         self.name = name
         self.if_normalize_score = False
         if aggregate_method == Aggregator.AVERAGE:
             self.if_normalize_score = True
+        if base_model == kNN.NAME:
+            self.mdl = kNN(neighbor, self.if_normalize_score)
+        elif base_model == LOF.NAME:
+            self.mdl = LOF(neighbor, self.if_normalize_score)
+        else:
+            raise Exception(f"Base Model: {base_model} is not supported.")
 
     def info(self):
         return f"{self.name} IF_NORMALIZE_SCORE: {self.if_normalize_score}"
