@@ -15,6 +15,7 @@ logger = getLogger(__name__)
 class Aggregator:
     COUNT_RANK_THRESHOLD = "count_rank_threshold"
     AVERAGE = "average"
+    AVERAGE_THRESHOLD = "average_threshold"
     COUNT_STD_THRESHOLD = "count_std_threshold"
 
     @classmethod
@@ -73,6 +74,24 @@ class Aggregator:
 
         return scores
 
+    @staticmethod
+    def average_threshold(model_outputs, M):
+        # =================================
+        # Small value means outlying
+        # =================================
+        scores = [0] * model_outputs[0].shape[0]
+        logger.debug(f"Score size {len(scores)}")
+        for model_output in model_outputs:
+            for idx, score in enumerate(model_output):
+                assert np.isnan(scores[idx] + score) == False, (scores[idx], score, model_output)
+                if score >= M:
+                    scores[idx] += score
+
+        for i in range(len(scores)):
+            scores[i] = scores[i] / len(model_outputs)
+
+        return scores
+
 
 class AbstractModel:
     def __init__(self, name, aggregate_method, base_model, neighbor):
@@ -80,6 +99,9 @@ class AbstractModel:
         self.if_normalize_score = False
         if aggregate_method == Aggregator.AVERAGE:
             self.if_normalize_score = True
+        elif aggregate_method == Aggregator.AVERAGE_THRESHOLD:
+            self.if_normalize_score = True
+
         if base_model == kNN.NAME:
             self.mdl = kNN(neighbor, self.if_normalize_score)
         elif base_model == LOF.NAME:
@@ -105,9 +127,9 @@ class AbstractModel:
         y_scores = np.array(rst)
         return roc_auc_score(ground_truth, y_scores)
 
-    def compute_precision_at_n(self, rst, ground_truth):
+    def compute_precision_at_n(self, rst, ground_truth, n=None):
         y_scores = np.array(rst)
-        return precision_n_scores(ground_truth, y_scores)
+        return precision_n_scores(ground_truth, y_scores, n)
 
 
 if __name__ == '__main__':
