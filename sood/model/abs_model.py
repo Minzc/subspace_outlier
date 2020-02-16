@@ -18,7 +18,7 @@ class Aggregator:
         scores = [0] * model_outputs[0].shape[0]
         logger.debug(f"Score size {len(scores)}")
         for model_output in model_outputs:
-            outlying_idx = np.argsort(model_output)[:threshold]
+            outlying_idx = np.argsort(model_output)[::-1][:threshold]
             for idx in outlying_idx:
                 # logger.debug(f"Idx {idx} Score {model_output[idx]}")
                 scores[idx] += 1
@@ -56,3 +56,10 @@ class AbstractModel:
     def compute_roc_auc(self, rst, ground_truth):
         y_scores = np.array(rst)
         return roc_auc_score(ground_truth, y_scores)
+
+if __name__ == '__main__':
+    import numpy as np
+    from sklearn.metrics import roc_auc_score
+    y_true = np.array([0, 0, 1, 1])
+    y_scores = np.array([-10, -7, -7.5, -3])
+    print(roc_auc_score(y_true, y_scores))

@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
+from sood.model.base_detectors import LOF
+
 from sood.model.abs_model import AbstractModel, Aggregator
 
 from sood.log import getLogger
@@ -18,13 +20,13 @@ logger = getLogger(__name__)
 class Full(AbstractModel):
     def __init__(self):
         super().__init__(f"FULL")
-        self.lof = LocalOutlierFactor(n_neighbors=10, metric="euclidean")
+        self.lof = LOF(10, False)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
-        self.lof.fit(data_array)
-        model_outputs.append(-self.lof.negative_outlier_factor_)
-        logger.debug(f"Outlier score shape: {self.lof.negative_outlier_factor_.shape}")
+        score = self.lof.fit(data_array)
+        model_outputs.append(score)
+        logger.debug(f"Outlier score shape: {score.shape}")
 
         return model_outputs
 
@@ -37,6 +39,5 @@ if __name__ == '__main__':
     full = Full()
     rst = full.run(X)
     logger.debug(f"Ensemble output {rst}")
-    logger.debug(f"Y {Y}")
     roc_auc = full.compute_roc_auc(rst, Y)
     logger.info(f"ROC AUC {roc_auc}")

@@ -4,6 +4,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
+from sood.model.base_detectors import LOF
+
 from sood.model.abs_model import AbstractModel, Aggregator
 
 from sood.log import getLogger
@@ -21,7 +23,7 @@ class FB(AbstractModel):
         self.dim_start = dim_start
         self.dim_end = dim_end
         self.ensemble_size = ensemble_size
-        self.lof = LocalOutlierFactor(n_neighbors=10, metric="euclidean")
+        self.lof = LOF(10, False)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
@@ -34,23 +36,26 @@ class FB(AbstractModel):
             _X = data_array[:, selected_features]
             logger.debug(f"Selected X: {_X.shape}")
             # Process selected dataset
-            # TODO run outlier detection on the dataset
-            self.lof.fit(_X)
-            model_outputs.append(self.lof.negative_outlier_factor_)
-            logger.debug(f"Outlier score shape: {self.lof.negative_outlier_factor_.shape}")
+            score = self.lof.fit(_X)
+            model_outputs.append(score)
+            logger.debug(f"Outlier score shape: {score.shape}")
         return model_outputs
 
     def aggregate_components(self, model_outputs):
-        # return Aggregator.count_rank_threshold(model_outputs, 100)
-        model_outputs = [-i for i in model_outputs]
-        return Aggregator.average(model_outputs)
+        return Aggregator.count_rank_threshold(model_outputs, 100)
+        # return Aggregator.average(model_outputs)
 
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
     X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
-    fb = FB(1, 100, 20)
-    rst = fb.run(X)
-    logger.debug(f"Ensemble output {rst}")
-    logger.debug(f"Y {Y}")
-    roc_auc = fb.compute_roc_auc(rst, Y)
-    logger.info(f"ROC AUC {roc_auc}")
+    for start, end in [(1, 140), (1, 120), (1, 100), (1, 80), (1, 60), (1, 40), (1, 20), (100, 274)]:
+        fb = FB(start, end, 20)
+        rst = fb.run(X)
+        logger.debug(f"Ensemble output {rst}")
+        logger.debug(f"Y {Y}")
+        total = 0
+        time = 1000
+        for i in range(time):
+            roc_auc = fb.compute_roc_auc(rst, Y)
+            total += roc_auc
+        logger.info(f"Start: {start} End: {end} ROC AUC {total / time}")
