@@ -77,7 +77,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
     with open(path_manager.get_raw_score(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate,
                                          exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
         logger.info(f"Start running {exp_config.to_json()}")
-        for _ in tqdm.tqdm(exp_config.EXP_NUM):
+        for _ in tqdm.tgrange(exp_config.EXP_NUM):
             rst = fb.run(exp_config.X)
             roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
             roc_aucs.append(roc_auc)
