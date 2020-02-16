@@ -5,8 +5,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 from sklearn.metrics import roc_auc_score
 from sood.model.base_detectors import kNN, LOF
-
 from sood.log import getLogger
+from pyod.utils.utility import precision_n_scores
 import numpy as np
 
 logger = getLogger(__name__)
@@ -104,6 +104,10 @@ class AbstractModel:
     def compute_roc_auc(self, rst, ground_truth):
         y_scores = np.array(rst)
         return roc_auc_score(ground_truth, y_scores)
+
+    def compute_precision_at_n(self, rst, ground_truth):
+        y_scores = np.array(rst)
+        return precision_n_scores(ground_truth, y_scores)
 
 
 if __name__ == '__main__':

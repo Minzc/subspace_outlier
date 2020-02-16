@@ -15,7 +15,7 @@ from sood.util import PathManager
 
 logger = getLogger(__name__)
 
-EXP_NUM = 100
+EXP_NUM = 20
 
 class ExpConfig:
     def __init__(self, dataset, aggregate, base_model, neighbor, ensemble_size, start, end, X, Y):
@@ -53,9 +53,9 @@ def generate_exp_conditions():
                     for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
                                        (3 * int(dim / 10), 4 * int(dim / 10)),
                                        (2 * int(dim / 10), 3 * int(dim / 10)),
-                                       (1, 2 * int(dim / 10)),
-                                       (1, int(dim / 2)),
+                                       (1 * int(dim / 10), 2 * int(dim / 10)),
                                        (1, int(dim / 10)),
+                                       (1, int(dim / 2)),
                                        (int(dim / 2), dim)]:
                         yield ExpConfig(dataset,
                                         aggregate,

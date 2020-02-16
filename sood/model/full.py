@@ -22,15 +22,13 @@ logger = getLogger(__name__)
 
 
 class Full(AbstractModel):
-    def __init__(self, neighbor):
-        super().__init__(f"FULL", Aggregator.AVERAGE)
-        self.lof = LOF(neighbor, False)
-        self.knn = kNN(neighbor, False)
+    def __init__(self, neighbor, base_model):
+        super().__init__(f"FULL", Aggregator.AVERAGE, base_model, neighbor)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
         # score = self.lof.fit(data_array)
-        score = self.knn.fit(data_array)
+        score = self.mdl.fit(data_array)
         model_outputs.append(score)
         logger.debug(f"Outlier score shape: {score.shape}")
 
@@ -51,8 +49,10 @@ if __name__ == '__main__':
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
 
     # neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    full = Full(neigh)
+    full = Full(neigh, kNN.NAME)
     rst = full.run(X)
     logger.debug(f"Ensemble output {rst}")
     roc_auc = full.compute_roc_auc(rst, Y)
     logger.info(f"ROC AUC {roc_auc}")
+    precision_at_n = full.compute_precision_at_n(rst, Y)
+    logger.info(f"Precision at N {precision_at_n}")
