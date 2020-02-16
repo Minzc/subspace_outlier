@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import time
 import json
 import numpy as np
+import tqdm
+
 from sood.model.fb import FB
 from sood.model.base_detectors import kNN, LOF
 from sood.data_process.data_loader import Dataset, DataLoader
@@ -74,8 +76,8 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
 
     with open(path_manager.get_raw_score(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate,
                                          exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
-        for i in range(exp_config.EXP_NUM):
-            logger.info(f"Start running {exp_config.to_json()} Iteration: {i}")
+        logger.info(f"Start running {exp_config.to_json()}")
+        for _ in tqdm.tqdm(exp_config.EXP_NUM):
             rst = fb.run(exp_config.X)
             roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
             roc_aucs.append(roc_auc)
