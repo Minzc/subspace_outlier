@@ -87,8 +87,8 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
             w.write(f"{json.dumps(rst)}\n")
 
     end_ts = time.time()
+    logger.info(f"Exp Config: {exp_config.to_json()}")
     logger.info(f"""
-    Exp Config: {exp_config.to_json()} 
     Avg. ROC AUC {np.mean(roc_aucs)} 
     Avg. Precision@m {np.mean(precision_at_ns)} 
     Std. ROC AUC: {np.std(roc_aucs)}
