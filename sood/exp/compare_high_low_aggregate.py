@@ -16,6 +16,8 @@ from sood.util import PathManager, Consts
 logger = getLogger(__name__)
 
 EXP_NUM = 20
+ENSEMBLE_SIZES = [10, 50, 100, 200, 300]
+
 
 class ExpConfig:
     def __init__(self, dataset, aggregate, base_model, neighbor, ensemble_size, start, end, X, Y):
@@ -49,7 +51,7 @@ def generate_exp_conditions():
                 X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
                 dim = X.shape[1]
                 neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
-                for ensemble_size in [10, 50, 100, 150, 200, 250, 300]:
+                for ensemble_size in ENSEMBLE_SIZES:
                     for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
                                        (3 * int(dim / 10), 4 * int(dim / 10)),
                                        (2 * int(dim / 10), 3 * int(dim / 10)),
@@ -86,22 +88,23 @@ def exp(exp_config: ExpConfig):
 
     end_ts = time.time()
     logger.info(f"""
-    Model: {exp_config.to_json()} 
-    ROC AUC {np.mean(roc_aucs)} 
-    Precision@m {np.mean(precision_at_ns)} 
-    Std: {np.std(roc_aucs)} 
+    Exp Config: {exp_config.to_json()} 
+    Avg. ROC AUC {np.mean(roc_aucs)} 
+    Avg. Precision@m {np.mean(precision_at_ns)} 
+    Std. ROC AUC: {np.std(roc_aucs)}
+    Std. Precision@m: {np.std(precision_at_ns)} 
     Time Elapse: {end_ts - start_ts}""")
     return roc_aucs, precision_at_ns, end_ts - start_ts
+
 
 def main():
     path_manager = PathManager()
     for exp_config in generate_exp_conditions():
-        with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate), "a") as w:
+        with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate),
+                  "a") as w:
             roc_aucs, precision_at_ns, elapse_time = exp(exp_config)
             result = exp_config.to_json()
             result[Consts.ROC_AUC] = roc_aucs
             result[Consts.PRECISION_A_N] = precision_at_ns
             result[Consts.TIME] = elapse_time
             w.write(f"{json.dumps(result)}\n")
-
-
