@@ -3,9 +3,9 @@
 #
 
 from __future__ import absolute_import, division, print_function, unicode_literals
-from collections import defaultdict
-import numpy as np
+from sklearn.metrics import roc_auc_score
 from sood.log import getLogger
+import numpy as np
 
 logger = getLogger(__name__)
 
@@ -24,6 +24,20 @@ class Aggregator:
                 scores[idx] += 1
         return scores
 
+    @staticmethod
+    def average(model_outputs):
+        # =================================
+        # Small value means outlying
+        # =================================
+        scores = [0] * model_outputs[0].shape[0]
+        logger.debug(f"Score size {len(scores)}")
+        for model_output in model_outputs:
+            for idx, score in enumerate(model_output):
+                scores[idx] += score
+        for i in range(len(scores)):
+            scores[i] = scores[i] / len(model_outputs)
+        return scores
+
 class AbstractModel:
     def __init__(self, name):
         self.name = name
@@ -38,3 +52,7 @@ class AbstractModel:
         model_outputs = self.compute_ensemble_components(data_array)
         rst = self.aggregate_components(model_outputs)
         return rst
+
+    def compute_roc_auc(self, rst, ground_truth):
+        y_scores = np.array(rst)
+        return roc_auc_score(ground_truth, y_scores)

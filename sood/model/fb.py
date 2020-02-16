@@ -21,7 +21,7 @@ class FB(AbstractModel):
         self.dim_start = dim_start
         self.dim_end = dim_end
         self.ensemble_size = ensemble_size
-        self.lof = LocalOutlierFactor(n_neighbors=5, metric="euclidean")
+        self.lof = LocalOutlierFactor(n_neighbors=10, metric="euclidean")
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
@@ -41,11 +41,16 @@ class FB(AbstractModel):
         return model_outputs
 
     def aggregate_components(self, model_outputs):
-        return Aggregator.count_rank_threshold(model_outputs, 100)
+        # return Aggregator.count_rank_threshold(model_outputs, 100)
+        model_outputs = [-i for i in model_outputs]
+        return Aggregator.average(model_outputs)
 
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
     X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
-    fb = FB(1, 10, 2)
+    fb = FB(1, 100, 20)
     rst = fb.run(X)
     logger.debug(f"Ensemble output {rst}")
+    logger.debug(f"Y {Y}")
+    roc_auc = fb.compute_roc_auc(rst, Y)
+    logger.info(f"ROC AUC {roc_auc}")

@@ -9,13 +9,14 @@ from sood.data_process.data_loader import Dataset
 from sood.util import PathManager, Consts
 from sood.log import getLogger
 import json
-from collections import defaultdict
+
 
 # ==================
 # Instance: 452
 # Feature: 274
 # Class 1: 66
 # Class 0: 386
+# Source: http://odds.cs.stonybrook.edu/arrhythmia-dataset/
 # ==================
 
 logger = getLogger(__name__)
