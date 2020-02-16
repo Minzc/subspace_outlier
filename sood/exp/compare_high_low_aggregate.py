@@ -104,8 +104,8 @@ def main():
                   "a") as w:
             roc_aucs, precision_at_ns, elapse_time = exp(exp_config, path_manager)
             result = exp_config.to_json()
-            result[Consts.ROC_AUC] = roc_aucs
-            result[Consts.PRECISION_A_N] = precision_at_ns
+            result[Consts.ROC_AUC] = (np.mean(roc_aucs), np.std(roc_aucs))
+            result[Consts.PRECISION_A_N] = (np.mean(precision_at_ns), np.std(precision_at_ns))
             result[Consts.TIME] = elapse_time
             w.write(f"{json.dumps(result)}\n")
 
