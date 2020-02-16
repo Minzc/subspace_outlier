@@ -13,6 +13,27 @@ logger = getLogger(__name__)
 class Aggregator:
     COUNT_RANK_THRESHOLD = "count_rank_threshold"
     AVERAGE = "average"
+    COUNT_STD_THRESHOLD = "count_std_threshold"
+
+    @staticmethod
+    def count_std_threshold(model_outputs, threshold):
+        # =================================
+        # Small value means outlying
+        # =================================
+        scores = [0] * model_outputs[0].shape[0]
+        logger.debug(f"Score size {len(scores)}")
+        for model_output in model_outputs:
+            mean = np.mean(model_output)
+            std = np.std(model_output)
+            t = mean + threshold * std
+            outlying_idx = model_output > t
+
+            for idx, if_outlying in enumerate(outlying_idx):
+                if if_outlying:
+                    logger.debug(f"Idx {idx} Score {model_output[idx]} T: {t} if_outlying: {if_outlying}")
+                    logger.debug(f"Mean {mean} Std {std}")
+                    scores[idx] += 1
+        return scores
 
     @staticmethod
     def count_rank_threshold(model_outputs, threshold):
@@ -22,6 +43,7 @@ class Aggregator:
         scores = [0] * model_outputs[0].shape[0]
         logger.debug(f"Score size {len(scores)}")
         for model_output in model_outputs:
+            # np.argsort() Sort in ascending order
             outlying_idx = np.argsort(model_output)[::-1][:threshold]
             for idx in outlying_idx:
                 # logger.debug(f"Idx {idx} Score {model_output[idx]}")
@@ -46,9 +68,9 @@ class Aggregator:
 class AbstractModel:
     def __init__(self, name, aggregate_method):
         self.name = name
-        self.if_normalize_score = True
-        if aggregate_method == Aggregator.COUNT_RANK_THRESHOLD:
-            self.if_normalize_score = False
+        self.if_normalize_score = False
+        if aggregate_method == Aggregator.AVERAGE:
+            self.if_normalize_score = True
 
     def info(self):
         return f"{self.name} IF_NORMALIZE_SCORE: {self.if_normalize_score}"

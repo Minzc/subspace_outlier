@@ -5,6 +5,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
 import json
+
+from pyod.utils import standardizer
+
 from sood.log import getLogger
 
 from sood.util import PathManager, Consts
@@ -15,6 +18,9 @@ logger = getLogger(__name__)
 class Dataset:
     ARRHYTHMIA = "arrhythmia"
     SPEECH = "speech"
+    MUSK = "musk"
+    MNIST_ODDS = "mnist_odds"
+    OPTDIGITS = "optdigits"
 
     def __init__(self, dataset):
         path_manager = PathManager()
@@ -25,7 +31,7 @@ class Dataset:
     @classmethod
     def supported_dataset(cls):
         return {
-            cls.ARRHYTHMIA, cls.SPEECH
+            cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.MNIST_ODDS, cls.OPTDIGITS
         }
 
 
@@ -46,7 +52,8 @@ class DataLoader:
         logger.debug(f"Dataset name: {dataset_name}")
         logger.debug(f"Dataset dimension: {np.array(X).shape}")
         logger.debug(f"Label dimension: {np.array(Y).shape}")
-        return np.array(X), np.array(Y)
+        X = np.array(X)
+        return X, np.array(Y)
 
 
 if __name__ == '__main__':

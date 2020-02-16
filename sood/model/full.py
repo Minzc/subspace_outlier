@@ -4,7 +4,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
-from sood.model.base_detectors import LOF
+from pyod.utils import standardizer
+
+from sood.model.base_detectors import LOF, kNN
 
 from sood.model.abs_model import AbstractModel, Aggregator
 
@@ -20,13 +22,15 @@ logger = getLogger(__name__)
 
 
 class Full(AbstractModel):
-    def __init__(self):
+    def __init__(self, neighbor):
         super().__init__(f"FULL", Aggregator.AVERAGE)
-        self.lof = LOF(10, False)
+        self.lof = LOF(neighbor, False)
+        self.knn = kNN(neighbor, False)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
-        score = self.lof.fit(data_array)
+        # score = self.lof.fit(data_array)
+        score = self.knn.fit(data_array)
         model_outputs.append(score)
         logger.debug(f"Outlier score shape: {score.shape}")
 
@@ -38,9 +42,16 @@ class Full(AbstractModel):
 
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
+    import scipy.io as sio
+    X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
 
-    X, Y = DataLoader.load(Dataset.SPEECH)
-    full = Full()
+    # data = sio.loadmat("data/musk.mat")
+    # X_train = data['X'].astype('double')
+    # y_label = np.squeeze(data['y']).astype('int')
+    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+
+    # neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+    full = Full(neigh)
     rst = full.run(X)
     logger.debug(f"Ensemble output {rst}")
     roc_auc = full.compute_roc_auc(rst, Y)
