@@ -84,7 +84,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
             precision_at_n = fb.compute_precision_at_n(rst, exp_config.Y)
             precision_at_ns.append(precision_at_n)
 
-            w.write(f"{json.dumps(rst)}")
+            w.write(f"{json.dumps(rst)}\n")
 
     end_ts = time.time()
     logger.info(f"""
@@ -93,7 +93,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
     Avg. Precision@m {np.mean(precision_at_ns)} 
     Std. ROC AUC: {np.std(roc_aucs)}
     Std. Precision@m: {np.std(precision_at_ns)} 
-    Time Elapse: {end_ts - start_ts}""")
+    Time Elapse: {end_ts - start_ts}""".replace("\n", " "))
     return roc_aucs, precision_at_ns, end_ts - start_ts
 
 
@@ -101,7 +101,7 @@ def main():
     path_manager = PathManager()
     for exp_config in generate_exp_conditions():
         with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate),
-                  "a") as w:
+                  "w") as w:
             roc_aucs, precision_at_ns, elapse_time = exp(exp_config, path_manager)
             result = exp_config.to_json()
             result[Consts.ROC_AUC] = (np.mean(roc_aucs), np.std(roc_aucs))
