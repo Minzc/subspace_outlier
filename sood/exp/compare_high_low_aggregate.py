@@ -52,7 +52,7 @@ def generate_exp_conditions():
                 dim = X.shape[1]
                 neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
                 for ensemble_size in ENSEMBLE_SIZES:
-                    for start, end in [ (1, int(dim / 2)), (int(dim / 2), dim)]:
+                    for start, end in [(1, int(dim / 2)), (int(dim / 2), dim)]:
                         yield ExpConfig(dataset,
                                         aggregate,
                                         base_model,
@@ -72,7 +72,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
     roc_aucs = []
     precision_at_ns = []
 
-    with open(path_manager.get_raw_score(exp_config.dataset, "u", exp_config.base_model, exp_config.aggregate,
+    with open(path_manager.get_raw_score(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate,
                                          exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
         for i in range(exp_config.EXP_NUM):
             logger.info(f"Start running {exp_config.to_json()} Iteration: {i}")
@@ -100,7 +100,7 @@ def main():
     for exp_config in generate_exp_conditions():
         with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate),
                   "a") as w:
-            roc_aucs, precision_at_ns, elapse_time = exp(exp_config)
+            roc_aucs, precision_at_ns, elapse_time = exp(exp_config, path_manager)
             result = exp_config.to_json()
             result[Consts.ROC_AUC] = roc_aucs
             result[Consts.PRECISION_A_N] = precision_at_ns
