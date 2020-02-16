@@ -54,7 +54,7 @@ def generate_exp_conditions():
                 dim = X.shape[1]
                 neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
                 for ensemble_size in ENSEMBLE_SIZES:
-                    for start, end in [(1, int(dim / 2)), (int(dim / 2), dim)]:
+                    for start, end in [(1, int(dim / 4)), (1, int(dim / 2)), (int(dim / 2), dim)]:
                         yield ExpConfig(dataset,
                                         aggregate,
                                         base_model,
@@ -63,6 +63,7 @@ def generate_exp_conditions():
                                         start,
                                         end,
                                         X, Y)
+                    logger.info("=" * 50)
 
 
 def exp(exp_config: ExpConfig, path_manager: PathManager):
@@ -88,8 +89,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
 
     end_ts = time.time()
     logger.info(f"Exp Config: {exp_config.to_json()}")
-    logger.info(f"""
-    Avg. ROC AUC {np.mean(roc_aucs)} 
+    logger.info(f"""Avg. ROC AUC {np.mean(roc_aucs)} 
     Avg. Precision@m {np.mean(precision_at_ns)} 
     Std. ROC AUC: {np.std(roc_aucs)}
     Std. Precision@m: {np.std(precision_at_ns)} 
