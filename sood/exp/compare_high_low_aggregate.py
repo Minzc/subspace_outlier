@@ -11,7 +11,7 @@ from sood.model.base_detectors import kNN, LOF
 from sood.data_process.data_loader import Dataset, DataLoader
 from sood.model.abs_model import Aggregator
 from sood.log import getLogger
-from sood.util import PathManager
+from sood.util import PathManager, Consts
 
 logger = getLogger(__name__)
 
@@ -32,13 +32,13 @@ class ExpConfig:
 
     def to_json(self):
         return {
-            "dataset": self.dataset,
-            "aggregate": self.aggregate,
-            "base_model": self.base_model,
-            "neighbor": self.neighbor,
-            "ensemble_size": self.ensemble_size,
-            "start_dim": self.start_dim,
-            "end_dim": self.end_dim
+            Consts.DATA_SET: self.dataset,
+            Consts.AGGREGATE: self.aggregate,
+            Consts.BASE_MODEL: self.base_model,
+            Consts.NEIGHBOR_SIZE: self.neighbor,
+            Consts.ENSEMBLE_SIZE: self.ensemble_size,
+            Consts.START_DIM: self.start_dim,
+            Consts.END_DIM: self.end_dim
         }
 
 
@@ -74,29 +74,34 @@ def exp(exp_config: ExpConfig):
 
     start_ts = time.time()
     roc_aucs = []
+    precision_at_ns = []
 
     for i in range(exp_config.EXP_NUM):
         logger.info(f"Start running {exp_config.to_json()} Iteration: {i}")
         rst = fb.run(exp_config.X)
         roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
         roc_aucs.append(roc_auc)
+        precision_at_n = fb.compute_precision_at_n(rst, exp_config.Y)
+        precision_at_ns.append(precision_at_n)
 
     end_ts = time.time()
     logger.info(f"""
     Model: {exp_config.to_json()} 
     ROC AUC {np.mean(roc_aucs)} 
+    Precision@m {np.mean(precision_at_ns)} 
     Std: {np.std(roc_aucs)} 
     Time Elapse: {end_ts - start_ts}""")
-    return roc_aucs, end_ts - start_ts
+    return roc_aucs, precision_at_ns, end_ts - start_ts
 
 def main():
     path_manager = PathManager()
     for exp_config in generate_exp_conditions():
-        with open(path_manager.get_output(exp_config.dataset, "uniform", exp_config.base_model), "a") as w:
-            roc_aucs, elapse_time = exp(exp_config)
+        with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate), "a") as w:
+            roc_aucs, precision_at_ns, elapse_time = exp(exp_config)
             result = exp_config.to_json()
-            result["roc_aucs"] = roc_aucs
-            result["time"] = elapse_time
+            result[Consts.ROC_AUC] = roc_aucs
+            result[Consts.PRECISION_A_N] = precision_at_ns
+            result[Consts.TIME] = elapse_time
             w.write(f"{json.dumps(result)}\n")
 
 
