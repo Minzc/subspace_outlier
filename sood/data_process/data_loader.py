@@ -14,6 +14,7 @@ logger = getLogger(__name__)
 
 class Dataset:
     ARRHYTHMIA = "arrhythmia"
+    SPEECH = "speech"
 
     def __init__(self, dataset):
         path_manager = PathManager()
@@ -21,11 +22,17 @@ class Dataset:
         self.file_path = f"{path_manager.dataset}/{dataset}/{dataset}.json"
         self.mat_file_path = f"{path_manager.dataset}/{dataset}/{dataset}.mat"
 
+    @classmethod
+    def supported_dataset(cls):
+        return {
+            cls.ARRHYTHMIA, cls.SPEECH
+        }
+
 
 class DataLoader:
     @staticmethod
     def load(dataset_name: str):
-        if dataset_name == Dataset.ARRHYTHMIA:
+        if dataset_name in Dataset.supported_dataset():
             dataset = Dataset(dataset_name)
         else:
             raise Exception(f"The dataset {dataset_name} is not support")

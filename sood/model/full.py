@@ -39,7 +39,7 @@ class Full(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
 
-    X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+    X, Y = DataLoader.load(Dataset.SPEECH)
     full = Full()
     rst = full.run(X)
     logger.debug(f"Ensemble output {rst}")

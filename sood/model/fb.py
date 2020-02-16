@@ -51,20 +51,25 @@ class FB(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
 
-    X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+    X, Y = DataLoader.load(Dataset.SPEECH)
     for start, end in [(1, 140), (1, 120), (1, 100), (1, 80), (1, 60), (1, 40), (1, 20), (100, 274)]:
         start_ts = time.time()
+
         fb = FB(start, end, 200, Aggregator.COUNT_RANK_THRESHOLD)
         rst = fb.run(X)
+
         logger.debug(f"Ensemble output {rst}")
         logger.debug(f"Y {Y}")
-        total = 0
+
         exp_num = 1000
+        roc_aucs = []
         for i in range(exp_num):
             roc_auc = fb.compute_roc_auc(rst, Y)
-            total += roc_auc
+            roc_aucs.append(roc_auc)
+
         end_ts = time.time()
-        logger.info(f"Model: {fb.info()} ROC AUC {total / exp_num} Time Elapse: {end_ts - start_ts}")
+        logger.info(
+            f"Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Time Elapse: {end_ts - start_ts}")
 
     logger.info("=" * 50)
     logger.info("Finish")
