@@ -106,3 +106,6 @@ def main():
             result[Consts.PRECISION_A_N] = precision_at_ns
             result[Consts.TIME] = elapse_time
             w.write(f"{json.dumps(result)}\n")
+
+if __name__ == '__main__':
+    main()
