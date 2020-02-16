@@ -52,13 +52,7 @@ def generate_exp_conditions():
                 dim = X.shape[1]
                 neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
                 for ensemble_size in ENSEMBLE_SIZES:
-                    for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
-                                       (3 * int(dim / 10), 4 * int(dim / 10)),
-                                       (2 * int(dim / 10), 3 * int(dim / 10)),
-                                       (1 * int(dim / 10), 2 * int(dim / 10)),
-                                       (1, int(dim / 10)),
-                                       (1, int(dim / 2)),
-                                       (int(dim / 2), dim)]:
+                    for start, end in [ (1, int(dim / 2)), (int(dim / 2), dim)]:
                         yield ExpConfig(dataset,
                                         aggregate,
                                         base_model,
@@ -69,7 +63,7 @@ def generate_exp_conditions():
                                         X, Y)
 
 
-def exp(exp_config: ExpConfig):
+def exp(exp_config: ExpConfig, path_manager: PathManager):
     fb = FB(exp_config.start_dim, exp_config.end_dim,
             exp_config.ensemble_size, exp_config.aggregate,
             exp_config.neighbor, exp_config.base_model)
@@ -78,13 +72,17 @@ def exp(exp_config: ExpConfig):
     roc_aucs = []
     precision_at_ns = []
 
-    for i in range(exp_config.EXP_NUM):
-        logger.info(f"Start running {exp_config.to_json()} Iteration: {i}")
-        rst = fb.run(exp_config.X)
-        roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
-        roc_aucs.append(roc_auc)
-        precision_at_n = fb.compute_precision_at_n(rst, exp_config.Y)
-        precision_at_ns.append(precision_at_n)
+    with open(path_manager.get_raw_score(exp_config.dataset, "u", exp_config.base_model, exp_config.aggregate,
+                                         exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
+        for i in range(exp_config.EXP_NUM):
+            logger.info(f"Start running {exp_config.to_json()} Iteration: {i}")
+            rst = fb.run(exp_config.X)
+            roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
+            roc_aucs.append(roc_auc)
+            precision_at_n = fb.compute_precision_at_n(rst, exp_config.Y)
+            precision_at_ns.append(precision_at_n)
+
+            w.write(f"{json.dumps(rst)}")
 
     end_ts = time.time()
     logger.info(f"""

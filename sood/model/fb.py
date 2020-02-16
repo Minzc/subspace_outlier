@@ -51,7 +51,7 @@ class FB(AbstractModel):
         elif self.aggregate_method == Aggregator.COUNT_STD_THRESHOLD:
             return Aggregator.count_std_threshold(model_outputs, 2)
         elif self.aggregate_method == Aggregator.AVERAGE_THRESHOLD:
-            return Aggregator.average_threshold(model_outputs, 1)
+            return Aggregator.average_threshold(model_outputs, 2)
 
 
 if __name__ == '__main__':

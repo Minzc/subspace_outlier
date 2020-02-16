@@ -26,8 +26,14 @@ class PathManager:
     def __init__(self):
         self.dataset = "../dataset"
         self.output = "output"
+        self.debug = "debug"
         if os.path.isdir(self.output) == False:
             os.mkdir(self.output)
+        if os.path.isdir(self.debug) == False:
+            os.mkdir(self.debug)
 
     def get_output(self, dataset, sample_method, base_method, aggregate):
         return f"{self.output}/{dataset}_{sample_method}_{base_method}_{aggregate}.json"
+
+    def get_raw_score(self, dataset, sample_method, base_method, aggregate, start_dim, end_dim, ensemble_size):
+        return f"{self.debug}/{dataset}_{sample_method}_{base_method}_{aggregate}_{start_dim}_{end_dim}_{ensemble_size}.json"
