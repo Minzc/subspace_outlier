@@ -10,6 +10,7 @@ from sood.model.abs_model import AbstractModel, Aggregator
 
 from sood.log import getLogger
 from sklearn.neighbors import LocalOutlierFactor
+
 # ====================================================
 # Feature Bagging
 # - Uniform sampling low dimensional data
@@ -17,9 +18,10 @@ from sklearn.neighbors import LocalOutlierFactor
 
 logger = getLogger(__name__)
 
+
 class Full(AbstractModel):
     def __init__(self):
-        super().__init__(f"FULL")
+        super().__init__(f"FULL", Aggregator.AVERAGE)
         self.lof = LOF(10, False)
 
     def compute_ensemble_components(self, data_array):
@@ -33,8 +35,10 @@ class Full(AbstractModel):
     def aggregate_components(self, model_outputs):
         return Aggregator.average(model_outputs)
 
+
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
+
     X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
     full = Full()
     rst = full.run(X)

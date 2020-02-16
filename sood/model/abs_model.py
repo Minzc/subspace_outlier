@@ -9,7 +9,11 @@ import numpy as np
 
 logger = getLogger(__name__)
 
+
 class Aggregator:
+    COUNT_RANK_THRESHOLD = "count_rank_threshold"
+    AVERAGE = "average"
+
     @staticmethod
     def count_rank_threshold(model_outputs, threshold):
         # =================================
@@ -38,9 +42,16 @@ class Aggregator:
             scores[i] = scores[i] / len(model_outputs)
         return scores
 
+
 class AbstractModel:
-    def __init__(self, name):
+    def __init__(self, name, aggregate_method):
         self.name = name
+        self.if_normalize_score = True
+        if aggregate_method == Aggregator.COUNT_RANK_THRESHOLD:
+            self.if_normalize_score = False
+
+    def info(self):
+        return f"{self.name} IF_NORMALIZE_SCORE: {self.if_normalize_score}"
 
     def compute_ensemble_components(self, data_array):
         pass
@@ -57,9 +68,11 @@ class AbstractModel:
         y_scores = np.array(rst)
         return roc_auc_score(ground_truth, y_scores)
 
+
 if __name__ == '__main__':
     import numpy as np
     from sklearn.metrics import roc_auc_score
+
     y_true = np.array([0, 0, 1, 1])
     y_scores = np.array([-10, -7, -7.5, -3])
     print(roc_auc_score(y_true, y_scores))
