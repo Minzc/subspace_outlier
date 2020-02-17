@@ -51,7 +51,7 @@ def generate_exp_conditions():
     for dataset in Dataset.supported_dataset():
         for aggregate in Aggregator.supported_aggregate():
             base_model = kNN.NAME
-            X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+            X, Y = DataLoader.load(dataset)
             dim = X.shape[1]
             neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
             for ensemble_size in ENSEMBLE_SIZES:
@@ -90,7 +90,6 @@ def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
 
     end_ts = time.time()
     logger.info(f"Sampling Method {Model.NAME}")
-    logger.info(f"Exp Config: {exp_config.to_json()}")
     logger.info(f"""Avg. ROC AUC {np.mean(roc_aucs)} 
     Avg. Precision@m {np.mean(precision_at_ns)} 
     Std. ROC AUC: {np.std(roc_aucs)}
