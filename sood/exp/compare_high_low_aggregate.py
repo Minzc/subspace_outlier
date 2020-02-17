@@ -50,21 +50,21 @@ class ExpConfig:
 def generate_exp_conditions():
     for dataset in Dataset.supported_dataset():
         for aggregate in Aggregator.supported_aggregate():
-            for base_model in [kNN.NAME, LOF.NAME]:
-                X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
-                dim = X.shape[1]
-                neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
-                for ensemble_size in ENSEMBLE_SIZES:
-                    for start, end in [(1, int(dim / 2)), (int(dim / 2), dim)]:
-                        yield ExpConfig(dataset,
-                                        aggregate,
-                                        base_model,
-                                        neighbor,
-                                        ensemble_size,
-                                        start,
-                                        end,
-                                        X, Y)
-                    logger.info("=" * 50)
+            base_model = kNN.NAME
+            X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+            dim = X.shape[1]
+            neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
+            for ensemble_size in ENSEMBLE_SIZES:
+                for start, end in [(1, int(dim / 2)), (int(dim / 2), dim)]:
+                    yield ExpConfig(dataset,
+                                    aggregate,
+                                    base_model,
+                                    neighbor,
+                                    ensemble_size,
+                                    start,
+                                    end,
+                                    X, Y)
+                logger.info("=" * 50)
 
 
 def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
@@ -110,6 +110,7 @@ def main():
                 result[Consts.PRECISION_A_N] = (np.mean(precision_at_ns), np.std(precision_at_ns))
                 result[Consts.TIME] = elapse_time
                 w.write(f"{json.dumps(result)}\n")
+            logger.info("-" * 50)
 
 if __name__ == '__main__':
     main()
