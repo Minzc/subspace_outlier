@@ -17,10 +17,10 @@ from sood.log import getLogger
 logger = getLogger(__name__)
 
 
-class FB(AbstractModel):
-    NAME = "FB"
+class Uniform(AbstractModel):
+    NAME = "UNIFORM"
     def __init__(self, dim_start, dim_end, ensemble_size, aggregate_method, neighbor, base_model):
-        name = f"FB({dim_start}-{dim_end} Neighbor: {neighbor}))"
+        name = f"UNIFORM({dim_start}-{dim_end} Neighbor: {neighbor}))"
         super().__init__(name, aggregate_method, base_model, neighbor)
         self.dim_start = dim_start
         self.dim_end = dim_end
@@ -30,13 +30,18 @@ class FB(AbstractModel):
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
-        feature_index = np.array([i for i in range(data_array.shape[1])])
+        total_features = data_array.shape[1]
+        feature_index = np.array([i for i in range(total_features)])
         for i in range(self.ensemble_size):
             # Randomly sample feature size
-            feature_size = np.random.randint(self.dim_start, self.dim_end)
+            while True:
+                selected_features = np.random.randint(2, size=total_features)
+                select_feature_num = np.sum(selected_features)
+                if select_feature_num < self.dim_end and select_feature_num > self.dim_start:
+                    break
             # Randomly select features
-            selected_features = np.random.choice(feature_index, feature_size)
-            logger.debug(f"Feature size: {feature_size}")
+            logger.debug(f"Feature size: {select_feature_num}")
+            selected_features = feature_index[selected_features == 1]
             logger.debug(f"Selected feature: {selected_features}")
             _X = data_array[:, selected_features]
             logger.debug(f"Selected X: {_X.shape}")
@@ -60,22 +65,16 @@ class FB(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
 
-    ENSEMBLE_SIZE = 100
-    EXP_NUM = 10
+    ENSEMBLE_SIZE = 20
+    EXP_NUM = 1
     PRECISION_AT_N = 10
 
-    X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+    X, Y = DataLoader.load(Dataset.MUSK)
     dim = X.shape[1]
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
 
-    for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
-                       (3 * int(dim / 10), 4 * int(dim / 10)),
-                       (2 * int(dim / 10), 3 * int(dim / 10)),
-                       (1 * int(dim / 10), 2 * int(dim / 10)),
-                       (1, int(dim / 10)),
-                       (1, int(dim / 2)),
-                       (int(dim / 2), dim)]:
-        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE_THRESHOLD, neigh, kNN.NAME)
+    for start, end in [(1, int(dim / 2))]:
+        fb = Uniform(start, end, ENSEMBLE_SIZE, Aggregator.COUNT_RANK_THRESHOLD, neigh, kNN.NAME)
 
         start_ts = time.time()
         roc_aucs = []
@@ -98,33 +97,3 @@ if __name__ == '__main__':
             f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)} Time Elapse: {end_ts - start_ts}""")
 
     logger.info("=" * 50)
-    for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
-                       (3 * int(dim / 10), 4 * int(dim / 10)),
-                       (2 * int(dim / 10), 3 * int(dim / 10)),
-                       (1, 2 * int(dim / 10)),
-                       (1, int(dim / 10)),
-                       (1, int(dim / 2)),
-                       (int(dim / 2), dim)]:
-        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME)
-
-        start_ts = time.time()
-        roc_aucs = []
-        precision_at_ns = []
-
-        for i in range(EXP_NUM):
-            rst = fb.run(X)
-
-            logger.debug(f"Ensemble output {rst}")
-            logger.debug(f"Y {Y}")
-
-            roc_auc = fb.compute_roc_auc(rst, Y)
-            roc_aucs.append(roc_auc)
-
-            precision_at_n = fb.compute_precision_at_n(rst, Y, PRECISION_AT_N)
-            precision_at_ns.append(precision_at_n)
-
-        end_ts = time.time()
-        logger.info(
-            f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)} Time Elapse: {end_ts - start_ts}""")
-
-    logger.info("Finish")

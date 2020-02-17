@@ -14,5 +14,5 @@ setup(
     packages=find_packages("."),
     include_package_data=True,
     package_data={'': ['*.json', '*.txt']},
-    install_requires=["scipy", "numpy", "sklearn", 'pyod']
+    install_requires=["scipy", "numpy", "sklearn", 'pyod', "tqdm"]
 )

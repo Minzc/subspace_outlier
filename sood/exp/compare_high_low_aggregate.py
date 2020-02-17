@@ -13,6 +13,7 @@ from sood.model.base_detectors import kNN, LOF
 from sood.data_process.data_loader import Dataset, DataLoader
 from sood.model.abs_model import Aggregator
 from sood.log import getLogger
+from sood.model.uniform import Uniform
 from sood.util import PathManager, Consts
 
 logger = getLogger(__name__)
@@ -66,8 +67,8 @@ def generate_exp_conditions():
                     logger.info("=" * 50)
 
 
-def exp(exp_config: ExpConfig, path_manager: PathManager):
-    fb = FB(exp_config.start_dim, exp_config.end_dim,
+def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
+    mdl = Model(exp_config.start_dim, exp_config.end_dim,
             exp_config.ensemble_size, exp_config.aggregate,
             exp_config.neighbor, exp_config.base_model)
 
@@ -75,14 +76,14 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
     roc_aucs = []
     precision_at_ns = []
 
-    with open(path_manager.get_raw_score(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate,
+    with open(path_manager.get_raw_score(exp_config.dataset, mdl.NAME, exp_config.base_model, exp_config.aggregate,
                                          exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
         logger.info(f"Start running {exp_config.to_json()}")
         for _ in tqdm.tgrange(exp_config.EXP_NUM):
-            rst = fb.run(exp_config.X)
-            roc_auc = fb.compute_roc_auc(rst, exp_config.Y)
+            rst = mdl.run(exp_config.X)
+            roc_auc = mdl.compute_roc_auc(rst, exp_config.Y)
             roc_aucs.append(roc_auc)
-            precision_at_n = fb.compute_precision_at_n(rst, exp_config.Y)
+            precision_at_n = mdl.compute_precision_at_n(rst, exp_config.Y)
             precision_at_ns.append(precision_at_n)
 
             w.write(f"{json.dumps(rst)}\n")
@@ -100,14 +101,14 @@ def exp(exp_config: ExpConfig, path_manager: PathManager):
 def main():
     path_manager = PathManager()
     for exp_config in generate_exp_conditions():
-        with open(path_manager.get_output(exp_config.dataset, "U", exp_config.base_model, exp_config.aggregate),
-                  "w") as w:
-            roc_aucs, precision_at_ns, elapse_time = exp(exp_config, path_manager)
-            result = exp_config.to_json()
-            result[Consts.ROC_AUC] = (np.mean(roc_aucs), np.std(roc_aucs))
-            result[Consts.PRECISION_A_N] = (np.mean(precision_at_ns), np.std(precision_at_ns))
-            result[Consts.TIME] = elapse_time
-            w.write(f"{json.dumps(result)}\n")
+        for Model in [FB, Uniform]:
+            with open(path_manager.get_output(exp_config.dataset, Model.NAME, exp_config.base_model, exp_config.aggregate), "w") as w:
+                roc_aucs, precision_at_ns, elapse_time = exp(exp_config, path_manager, Model)
+                result = exp_config.to_json()
+                result[Consts.ROC_AUC] = (np.mean(roc_aucs), np.std(roc_aucs))
+                result[Consts.PRECISION_A_N] = (np.mean(precision_at_ns), np.std(precision_at_ns))
+                result[Consts.TIME] = elapse_time
+                w.write(f"{json.dumps(result)}\n")
 
 if __name__ == '__main__':
     main()
