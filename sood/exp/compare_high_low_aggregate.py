@@ -55,7 +55,7 @@ def generate_exp_conditions():
                 dim = X.shape[1]
                 neighbor = max(10, int(np.floor(0.03 * X.shape[0])))
                 for ensemble_size in ENSEMBLE_SIZES:
-                    for start, end in [(1, int(dim / 4)), (1, int(dim / 2)), (int(dim / 2), dim)]:
+                    for start, end in [(1, int(dim / 2)), (int(dim / 2), dim)]:
                         yield ExpConfig(dataset,
                                         aggregate,
                                         base_model,
@@ -78,7 +78,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
 
     with open(path_manager.get_raw_score(exp_config.dataset, mdl.NAME, exp_config.base_model, exp_config.aggregate,
                                          exp_config.start_dim, exp_config.end_dim, exp_config.ensemble_size), "w") as w:
-        logger.info(f"Start running {exp_config.to_json()}")
+        logger.info(f"Start running {Model.NAME} {exp_config.to_json()}")
         for _ in tqdm.tgrange(exp_config.EXP_NUM):
             rst = mdl.run(exp_config.X)
             roc_auc = mdl.compute_roc_auc(rst, exp_config.Y)
@@ -89,6 +89,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
             w.write(f"{json.dumps(rst)}\n")
 
     end_ts = time.time()
+    logger.info(f"Sampling Method {Model.NAME}")
     logger.info(f"Exp Config: {exp_config.to_json()}")
     logger.info(f"""Avg. ROC AUC {np.mean(roc_aucs)} 
     Avg. Precision@m {np.mean(precision_at_ns)} 
