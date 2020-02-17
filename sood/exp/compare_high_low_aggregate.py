@@ -19,7 +19,7 @@ from sood.util import PathManager, Consts
 logger = getLogger(__name__)
 
 EXP_NUM = 20
-ENSEMBLE_SIZES = [10, 50, 100, 200, 300]
+ENSEMBLE_SIZES = [100, ]
 
 
 class ExpConfig:
