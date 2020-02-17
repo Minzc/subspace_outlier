@@ -97,34 +97,34 @@ if __name__ == '__main__':
         logger.info(
             f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)} Time Elapse: {end_ts - start_ts}""")
 
-    logger.info("=" * 50)
-    for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
-                       (3 * int(dim / 10), 4 * int(dim / 10)),
-                       (2 * int(dim / 10), 3 * int(dim / 10)),
-                       (1, 2 * int(dim / 10)),
-                       (1, int(dim / 10)),
-                       (1, int(dim / 2)),
-                       (int(dim / 2), dim)]:
-        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME)
-
-        start_ts = time.time()
-        roc_aucs = []
-        precision_at_ns = []
-
-        for i in range(EXP_NUM):
-            rst = fb.run(X)
-
-            logger.debug(f"Ensemble output {rst}")
-            logger.debug(f"Y {Y}")
-
-            roc_auc = fb.compute_roc_auc(rst, Y)
-            roc_aucs.append(roc_auc)
-
-            precision_at_n = fb.compute_precision_at_n(rst, Y, PRECISION_AT_N)
-            precision_at_ns.append(precision_at_n)
-
-        end_ts = time.time()
-        logger.info(
-            f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)} Time Elapse: {end_ts - start_ts}""")
-
-    logger.info("Finish")
+    # logger.info("=" * 50)
+    # for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
+    #                    (3 * int(dim / 10), 4 * int(dim / 10)),
+    #                    (2 * int(dim / 10), 3 * int(dim / 10)),
+    #                    (1, 2 * int(dim / 10)),
+    #                    (1, int(dim / 10)),
+    #                    (1, int(dim / 2)),
+    #                    (int(dim / 2), dim)]:
+    #     fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME)
+    #
+    #     start_ts = time.time()
+    #     roc_aucs = []
+    #     precision_at_ns = []
+    #
+    #     for i in range(EXP_NUM):
+    #         rst = fb.run(X)
+    #
+    #         logger.debug(f"Ensemble output {rst}")
+    #         logger.debug(f"Y {Y}")
+    #
+    #         roc_auc = fb.compute_roc_auc(rst, Y)
+    #         roc_aucs.append(roc_auc)
+    #
+    #         precision_at_n = fb.compute_precision_at_n(rst, Y, PRECISION_AT_N)
+    #         precision_at_ns.append(precision_at_n)
+    #
+    #     end_ts = time.time()
+    #     logger.info(
+    #         f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)} Time Elapse: {end_ts - start_ts}""")
+    #
+    # logger.info("Finish")

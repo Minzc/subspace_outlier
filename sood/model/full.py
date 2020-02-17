@@ -41,7 +41,7 @@ class Full(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
     import scipy.io as sio
-    X, Y = DataLoader.load(Dataset.ARRHYTHMIA)
+    X, Y = DataLoader.load(Dataset.SPEECH)
 
     # data = sio.loadmat("data/musk.mat")
     # X_train = data['X'].astype('double')
