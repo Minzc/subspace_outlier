@@ -4,8 +4,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from tqdm import tqdm
-
+import tqdm
 from sood.data_process.data_loader import DataLoader, Dataset
 from pyod.utils.stat_models import wpearsonr
 from sood.log import getLogger
