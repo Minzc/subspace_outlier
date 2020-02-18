@@ -30,7 +30,7 @@ class Dataset:
 
     @classmethod
     def supported_dataset(cls):
-        return [cls.OPTDIGITS, cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.MNIST_ODDS]
+        return [cls.MNIST_ODDS, cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.OPTDIGITS]
 
 
 class DataLoader:
