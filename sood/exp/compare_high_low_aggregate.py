@@ -87,6 +87,7 @@ def exp(exp_config: ExpConfig, path_manager: PathManager, Model):
             precision_at_ns.append(precision_at_n)
 
             w.write(f"{json.dumps(rst)}\n")
+            print(f"AUC {roc_aucs} Precision {precision_at_n}")
 
     end_ts = time.time()
     logger.info(f"Sampling Method {Model.NAME}")
