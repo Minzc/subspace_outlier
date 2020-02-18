@@ -43,7 +43,8 @@ class Lscp(AbstractModel):
         clf = LSCP(detector_list)
         clf.fit(data_array)
         score = clf.decision_scores_
-        return [score[:, 1], ]
+        print(score)
+        return [score, ]
 
     def aggregate_components(self, model_outputs):
         return model_outputs[0]

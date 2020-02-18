@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.neighbors import NearestNeighbors
+from sklearn.utils.validation import check_is_fitted, check_array
+
 from sood.data_process.data_loader import DataLoader, Dataset
 from pyod.models.knn import KNN
 from sood.log import getLogger
@@ -69,6 +71,12 @@ class kNN(KNN):
         else:
             return score
 
+    def decision_function(self, X):
+        logger.info(f"Before data shape {X.shape}")
+        X = X[:, self.selected_features]
+        logger.info(f"After data shape {X.shape}")
+        return super().decision_function(X)
+
 
 def test():
     X, Y = DataLoader.load(Dataset.MUSK)
@@ -79,6 +87,7 @@ def test():
     print(y_scores)
     roc_auc = roc_auc_score(Y, y_scores)
     print(roc_auc)
+
 
 if __name__ == '__main__':
     test()
