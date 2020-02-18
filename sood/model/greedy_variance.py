@@ -67,7 +67,7 @@ class GreedyVariance(AbstractModel):
                 print("Ensemble After {}".format(roc_auc))
             print('-' * 50)
         logger.info("Number of good subspace {}/{}".format(counter, self.ensemble_size))
-        logger.info("Maixmum roc {}".format(max(rocs)))
+        logger.info("Maximum roc {}".format(max(rocs)))
         logger.info("Minimum roc {}".format(min(rocs)))
         return model_outputs
 
@@ -113,8 +113,8 @@ def test_greedy_threshold():
                 logger.info(f"{dataset} {aggregator} {threshold}")
                 roc_aucs = []
                 precision_at_ns = []
+                mdl = GreedyVariance(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
                 for _ in tqdm.trange(5):
-                    mdl = GreedyVariance(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
                     try:
                         rst = mdl.run(X)
                         roc_auc = mdl.compute_roc_auc(rst, Y)
