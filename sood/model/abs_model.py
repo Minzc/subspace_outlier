@@ -45,22 +45,23 @@ class Aggregator:
     @staticmethod
     def count_rank_threshold(model_outputs, threshold):
         # =================================
-        # Small value means outlying
+        # Large value means outlying
         # =================================
         scores = [0] * model_outputs[0].shape[0]
-        logger.debug(f"Score size {len(scores)}")
+        threshold = max(int(len(scores) * threshold) + 1, 10)
+        logger.debug(f"Score size {len(scores)} Threshold {threshold}")
         for model_output in model_outputs:
             # np.argsort() Sort in ascending order
             outlying_idx = np.argsort(model_output)[::-1][:threshold]
+            logger.debug(f"Score {model_output[outlying_idx[0]]} {model_output[outlying_idx[1]]}")
             for idx in outlying_idx:
-                # logger.debug(f"Idx {idx} Score {model_output[idx]}")
                 scores[idx] += 1
         return scores
 
     @staticmethod
     def average(model_outputs):
         # =================================
-        # Small value means outlying
+        # Large value means outlying
         # =================================
         scores = [0] * model_outputs[0].shape[0]
         logger.debug(f"Score size {len(scores)}")
