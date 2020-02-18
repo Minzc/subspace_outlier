@@ -68,13 +68,7 @@ if __name__ == '__main__':
     dim = X.shape[1]
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
 
-    for start, end in [(4 * int(dim / 10), 5 * int(dim / 10)),
-                       (3 * int(dim / 10), 4 * int(dim / 10)),
-                       (2 * int(dim / 10), 3 * int(dim / 10)),
-                       (1 * int(dim / 10), 2 * int(dim / 10)),
-                       (1, int(dim / 10)),
-                       (1, int(dim / 2)),
-                       (int(dim / 2), dim)]:
+    for start, end in [ (1, int(dim / 2)), (int(dim / 2), dim)]:
         fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE_THRESHOLD, neigh, kNN.NAME)
 
         start_ts = time.time()

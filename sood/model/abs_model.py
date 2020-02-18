@@ -20,7 +20,7 @@ class Aggregator:
 
     @classmethod
     def supported_aggregate(cls):
-        return [cls.COUNT_RANK_THRESHOLD, cls.AVERAGE, cls.COUNT_STD_THRESHOLD, cls.AVERAGE_THRESHOLD]
+        return [cls.AVERAGE, cls.COUNT_RANK_THRESHOLD, cls.COUNT_STD_THRESHOLD, cls.AVERAGE_THRESHOLD]
 
     @staticmethod
     def count_std_threshold(model_outputs, threshold):

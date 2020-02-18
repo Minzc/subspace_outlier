@@ -108,8 +108,7 @@ class GreedyVariance(AbstractModel):
             return Aggregator.average_threshold(model_outputs, 2)
 
 
-if __name__ == '__main__':
-    from sood.model.base_detectors import kNN
+def test():
     for dataset in [Dataset.ARRHYTHMIA, Dataset.OPTDIGITS, Dataset.MUSK, Dataset.MNIST_ODDS]:
         for aggregator in [Aggregator.COUNT_STD_THRESHOLD, Aggregator.AVERAGE_THRESHOLD]:
             for threshold in [0, 0.5, 0.7, 0.9]:
@@ -127,3 +126,19 @@ if __name__ == '__main__':
                     logger.info("Precision@n {}".format(precision_at_n))
                 except Exception as e:
                     logger.exception(e)
+
+if __name__ == '__main__':
+    from sood.model.base_detectors import kNN
+    X, Y = DataLoader.load(Dataset.OPTDIGITS)
+    dim = X.shape[1]
+    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+    ENSEMBLE_SIZE = 100
+    mdl = GreedyVariance(1, dim / 2, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME, Y, 0)
+    try:
+        rst = mdl.run(X)
+        roc_auc = mdl.compute_roc_auc(rst, Y)
+        logger.info("Final ROC {}".format(roc_auc))
+        precision_at_n = mdl.compute_precision_at_n(rst, Y)
+        logger.info("Precision@n {}".format(precision_at_n))
+    except Exception as e:
+        logger.exception(e)
