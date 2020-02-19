@@ -90,7 +90,7 @@ def batch_test():
             for base_model in [kNN.NAME, ]:
                 # =======================================================================================
                 # Model
-                output_path = path_manager.get_batch_test_model_output(FB.NAME, aggregator, base_model, "DEFAULT")
+                output_path = path_manager.get_batch_test_model_output(FB.NAME, aggregator, base_model, "DEFAULT", dataset)
                 # =======================================================================================
                 with open(output_path, "w") as w:
                     for threshold in [0, ]:

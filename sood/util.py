@@ -120,4 +120,4 @@ class PathManager:
         return f"{self.debug}/{dataset}_{sample_method}_{base_method}_{aggregate}_{start_dim}_{end_dim}_{ensemble_size}.json"
 
     def get_batch_test_model_output(self, model_name, aggregator, base_method, normalizer, dataset):
-        return f"{self.output}/batchtest/{dataset}_{model_name}_{base_method}_{aggregator}_{normalizer}.json"
+        return f"{self.batch_model_test}/{dataset}_{model_name}_{base_method}_{aggregator}_{normalizer}.json"
