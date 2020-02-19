@@ -160,7 +160,7 @@ def batch_test():
                 output_path = path_manager.get_model_output(OracleAdaptive.NAME, aggregator, base_model)
                 # =======================================================================================
                 with open(output_path, "w") as w:
-                    for threshold in [0, 0.3, 0.5, 0.7]:
+                    for threshold in [0, ]:
                         X, Y = DataLoader.load(dataset)
                         dim = X.shape[1]
                         neigh = max(10, int(np.floor(0.03 * X.shape[0])))
@@ -175,6 +175,7 @@ def batch_test():
                         for _ in tqdm.trange(5):
                             try:
                                 rst = mdl.run(X)
+                                # Throw exception if no satisfied subspaces are found
                                 roc_auc = mdl.compute_roc_auc(rst, Y)
                                 logger.info("Final ROC {}".format(roc_auc))
                                 precision_at_n = mdl.compute_precision_at_n(rst, Y)
@@ -198,7 +199,8 @@ def batch_test():
                             Consts.END_DIM: 1 / 4,
                             Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
                         }
-                        w.write(f"{json.dump(output)}")
+                        w.write(f"{json.dumps(output)}")
+                        logger.info(f"Output file is {output_path}")
 
 if __name__ == '__main__':
     batch_test()
