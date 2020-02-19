@@ -5,11 +5,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tqdm
-from numba.ir import Const
-
 from sood.data_process.data_loader import DataLoader, Dataset
 from sood.log import getLogger
-from scipy.stats import spearmanr
 from sood.model.abs_model import AbstractModel, Aggregator
 from sood.util import Similarity, PathManager, Consts
 import numpy as np
@@ -17,20 +14,6 @@ import numpy as np
 from sood.model.base_detectors import kNN
 
 logger = getLogger(__name__)
-
-
-# def spearman(initial_rank_list, local_rank_list):
-#     global_outlying_idx = np.argsort(initial_rank_list)[::-1]
-#     local_outlying_idx = np.argsort(local_rank_list)[::-1]
-#
-#     g_rank = [0] * global_outlying_idx.shape[0]
-#     l_rank = [0] * global_outlying_idx.shape[0]
-#
-#     for rank, idx in enumerate(global_outlying_idx):
-#         g_rank[idx] = rank
-#     for rank, idx in enumerate(local_outlying_idx):
-#         l_rank[idx] = rank
-#     return spearmanr(g_rank, l_rank)[0]
 
 
 class OracleAdaptive(AbstractModel):
@@ -43,9 +26,9 @@ class OracleAdaptive(AbstractModel):
         self.dim_end = dim_end
         self.ensemble_size = ensemble_size
         self.aggregate_method = aggregate_method
-        np.random.seed(1)
         self.Y = Y
         self.threshold = threshold
+        np.random.seed(1)
 
     def compute_ensemble_components(self, data_array):
         model_outputs = []
@@ -201,6 +184,7 @@ def batch_test():
                         }
                         w.write(f"{json.dumps(output)}")
                         logger.info(f"Output file is {output_path}")
+
 
 if __name__ == '__main__':
     batch_test()
