@@ -89,6 +89,6 @@ if __name__ == '__main__':
     import sys
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "model", required=["fb", "oracle"])
+    parser.add_argument("-m", required=["fb", "oracle"])
     parsedArgs = parser.parse_args(sys.argv[1:])
     experiment(parsedArgs.m)
