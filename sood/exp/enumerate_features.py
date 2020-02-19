@@ -32,19 +32,29 @@ for l in range(1, len(feature_index) + 1):
         print("Finish one")
 
 print(f"Total model {len(model_outputs)}")
-score = Aggregator.count_std_threshold(model_outputs, 2)
-y_scores = np.array(score)
-roc = roc_auc_score(Y, y_scores)
-print(f"ROC of count {roc}")
-precision = precision_n_scores(Y, y_scores)
-print(f"ROC of precision {precision}")
+
 
 score = Aggregator.average_threshold(model_outputs, 2)
 y_scores = np.array(score)
 roc = roc_auc_score(Y, y_scores)
 print(f"ROC of average 2-std {roc}")
 precision = precision_n_scores(Y, y_scores)
-print(f"ROC of precision {precision}")
+print(f"Precision of average 2-std {precision}")
+
+
+score = Aggregator.count_rank_threshold(model_outputs, int(X.shape[0] * 0.05) )
+y_scores = np.array(score)
+roc = roc_auc_score(Y, y_scores)
+print(f"ROC of count top5% {roc}")
+precision = precision_n_scores(Y, y_scores)
+print(f"Precision of count top5% {precision}")
+
+score = Aggregator.count_std_threshold(model_outputs, 2)
+y_scores = np.array(score)
+roc = roc_auc_score(Y, y_scores)
+print(f"ROC of count std {roc}")
+precision = precision_n_scores(Y, y_scores)
+print(f"Precision of count std {precision}")
 
 
 score = Aggregator.average(model_outputs)
@@ -52,4 +62,4 @@ y_scores = np.array(score)
 roc = roc_auc_score(Y, y_scores)
 print(f"ROC of average {roc}")
 precision = precision_n_scores(Y, y_scores)
-print(f"ROC of precision {precision}")
+print(f"Precision of average {precision}")
