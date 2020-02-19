@@ -9,6 +9,8 @@ from sood.log import getLogger
 from pyod.utils.utility import precision_n_scores
 import numpy as np
 
+from sood.util import Normalize
+
 logger = getLogger(__name__)
 
 
@@ -95,23 +97,33 @@ class Aggregator:
 
 
 class AbstractModel:
-    def __init__(self, name, aggregate_method, base_model, neighbor):
+    def __init__(self, name, aggregate_method, base_model, neighbor, norm_method="DEFAULT"):
         self.name = name
-        self.if_normalize_score = False
-        if aggregate_method == Aggregator.AVERAGE:
-            self.if_normalize_score = True
-        elif aggregate_method == Aggregator.AVERAGE_THRESHOLD:
-            self.if_normalize_score = True
+        # =======================================
+        # Setup normalization method
+        # =======================================
+        assert norm_method in {Normalize.ZSCORE, Normalize.UNIFY, "DEFAULT", None}
+        if norm_method == "DEFAULT":
+            if aggregate_method == Aggregator.AVERAGE:
+                self.norm_method = Normalize.ZSCORE
+            elif aggregate_method == Aggregator.AVERAGE_THRESHOLD:
+                self.norm_method = Normalize.ZSCORE
+            else:
+                self.norm_method = None
+        else:
+            self.norm_method = norm_method
 
         if base_model == kNN.NAME:
-            self.mdl = kNN(neighbor, self.if_normalize_score)
+            self.mdl = kNN(neighbor, self.norm_method)
         elif base_model == LOF.NAME:
-            self.mdl = LOF(neighbor, self.if_normalize_score)
+            self.mdl = LOF(neighbor, self.norm_method)
+        elif base_model == None:
+            self.mdl = None
         else:
             raise Exception(f"Base Model: {base_model} is not supported.")
 
     def info(self):
-        return f"{self.name} IF_NORMALIZE_SCORE: {self.if_normalize_score}"
+        return f"{self.name} IF_NORMALIZE_SCORE: {self.norm_method}"
 
     def compute_ensemble_components(self, data_array):
         pass

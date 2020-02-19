@@ -7,10 +7,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tqdm
 
 from sood.data_process.data_loader import DataLoader, Dataset
-from pyod.utils.stat_models import wpearsonr
 from sood.log import getLogger
 from scipy.stats import spearmanr
 from sood.model.abs_model import AbstractModel, Aggregator
+from sood.util import Similarity
 import numpy as np
 
 from sood.model.base_detectors import kNN
@@ -18,36 +18,19 @@ from sood.model.base_detectors import kNN
 logger = getLogger(__name__)
 
 
-def jaccard(g_array, l_array):
-    g_array = g_array[:150]
-    l_array = l_array[:150]
-    g_set = set(g_array.tolist())
-    l_set = set(l_array.tolist())
-    return len(g_set & l_set) / len(g_set | l_set)
 
-
-def spearman(initial_rank_list, local_rank_list):
-    global_outlying_idx = np.argsort(initial_rank_list)[::-1]
-    local_outlying_idx = np.argsort(local_rank_list)[::-1]
-
-    g_rank = [0] * global_outlying_idx.shape[0]
-    l_rank = [0] * global_outlying_idx.shape[0]
-
-    for rank, idx in enumerate(global_outlying_idx):
-        g_rank[idx] = rank
-    for rank, idx in enumerate(local_outlying_idx):
-        l_rank[idx] = rank
-    return spearmanr(g_rank, l_rank)[0]
-
-
-def pearson(initial_rank_list, local_rank_list):
-    global_outlying_idx = np.argsort(initial_rank_list)[::-1]
-    local_outlying_idx = np.argsort(local_rank_list)[::-1]
-    weights = [0] * initial_rank_list.shape[0]
-    for rank, idx in enumerate(global_outlying_idx):
-        weights[idx] = 1 / (rank + 1)
-    logger.info(f"Score {initial_rank_list[global_outlying_idx[0]]} {initial_rank_list[global_outlying_idx[1]]}")
-    return wpearsonr(initial_rank_list, local_outlying_idx, weights)
+# def spearman(initial_rank_list, local_rank_list):
+#     global_outlying_idx = np.argsort(initial_rank_list)[::-1]
+#     local_outlying_idx = np.argsort(local_rank_list)[::-1]
+#
+#     g_rank = [0] * global_outlying_idx.shape[0]
+#     l_rank = [0] * global_outlying_idx.shape[0]
+#
+#     for rank, idx in enumerate(global_outlying_idx):
+#         g_rank[idx] = rank
+#     for rank, idx in enumerate(local_outlying_idx):
+#         l_rank[idx] = rank
+#     return spearmanr(g_rank, l_rank)[0]
 
 
 class OracleAdaptive(AbstractModel):
@@ -88,7 +71,7 @@ class OracleAdaptive(AbstractModel):
         global_rank_list = np.array(self.aggregate_components(model_outputs))
 
         for i in range(initial_count, self.ensemble_size):
-            s_score = spearman(global_rank_list, local_rank_list) # Compute spearman correlation
+            s_score = Similarity.spearman(global_rank_list, local_rank_list)  # Compute spearman correlation
 
             choice_probability = [1] * total_feature
             for f_idx in selected_features:
@@ -132,8 +115,8 @@ class OracleAdaptive(AbstractModel):
 
 
 if __name__ == '__main__':
-    dataset = Dataset.MNIST_ODDS
-    aggregator = Aggregator.AVERAGE_THRESHOLD
+    dataset = Dataset.ARRHYTHMIA
+    aggregator = Aggregator.COUNT_RANK_THRESHOLD
     threshold = 0
 
     X, Y = DataLoader.load(dataset)
