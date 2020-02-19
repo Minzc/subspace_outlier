@@ -5,18 +5,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tqdm
+from numba.ir import Const
 
 from sood.data_process.data_loader import DataLoader, Dataset
 from sood.log import getLogger
 from scipy.stats import spearmanr
 from sood.model.abs_model import AbstractModel, Aggregator
-from sood.util import Similarity
+from sood.util import Similarity, PathManager, Consts
 import numpy as np
 
 from sood.model.base_detectors import kNN
 
 logger = getLogger(__name__)
-
 
 
 # def spearman(initial_rank_list, local_rank_list):
@@ -116,7 +116,7 @@ class OracleAdaptive(AbstractModel):
             return Aggregator.average_threshold(model_outputs, 2)
 
 
-if __name__ == '__main__':
+def single_test():
     dataset = Dataset.MNIST_ODDS
     aggregator = Aggregator.AVERAGE
     threshold = 0
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     logger.info(f"{dataset} {aggregator} {threshold}")
     roc_aucs = []
     precision_at_ns = []
-    mdl = OracleAdaptive(2, dim /4, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
+    mdl = OracleAdaptive(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
     for _ in tqdm.trange(1):
         try:
             rst = mdl.run(X)
@@ -145,3 +145,60 @@ if __name__ == '__main__':
     logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
     logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
     logger.info(f"====================================================")
+
+
+def batch_test():
+    import json
+    path_manager = PathManager()
+    ENSEMBLE_SIZE = 100
+    for dataset in [Dataset.ARRHYTHMIA, Dataset.MUSK, Dataset.MNIST_ODDS, Dataset.OPTDIGITS]:
+        for aggregator in [Aggregator.AVERAGE, Aggregator.AVERAGE_THRESHOLD, Aggregator.COUNT_STD_THRESHOLD,
+                           Aggregator.COUNT_RANK_THRESHOLD]:
+            for base_model in [kNN.NAME, ]:
+                # =======================================================================================
+                # Model
+                output_path = path_manager.get_model_output(OracleAdaptive.NAME, aggregator, base_model.NAME)
+                # =======================================================================================
+                with open(output_path, "w") as w:
+                    for threshold in [0, 0.3, 0.5, 0.7]:
+                        X, Y = DataLoader.load(dataset)
+                        dim = X.shape[1]
+                        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+                        logger.info(f"{dataset} {aggregator} {threshold}")
+                        roc_aucs = []
+                        precision_at_ns = []
+                        # =======================================================================================
+                        # Model
+                        mdl = OracleAdaptive(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, base_model.NAME, Y,
+                                             threshold)
+                        # =======================================================================================
+                        for _ in tqdm.trange(5):
+                            try:
+                                rst = mdl.run(X)
+                                roc_auc = mdl.compute_roc_auc(rst, Y)
+                                logger.info("Final ROC {}".format(roc_auc))
+                                precision_at_n = mdl.compute_precision_at_n(rst, Y)
+                                logger.info("Precision@n {}".format(precision_at_n))
+
+                                roc_aucs.append(roc_auc)
+                                precision_at_ns.append(precision_at_n)
+                            except Exception as e:
+                                logger.exception(e)
+                        logger.info(f"Exp Information {dataset} {aggregator} {threshold}")
+                        logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
+                        logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
+                        logger.info(f"====================================================")
+                        output = {
+                            Consts.DATA: dataset,
+                            Consts.ROC_AUC: np.mean(roc_aucs),
+                            Consts.PRECISION_A_N: np.mean(precision_at_ns),
+                            Consts.AGGREGATE: aggregator,
+                            Consts.BASE_MODEL: base_model.NAME,
+                            Consts.START_DIM: 2,
+                            Consts.END_DIM: 1 / 4,
+                            Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
+                        }
+                        w.write(f"{json.dump(output)}")
+
+if __name__ == '__main__':
+    batch_test()
