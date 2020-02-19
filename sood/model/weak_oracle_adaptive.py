@@ -71,7 +71,7 @@ class OracleAdaptive(AbstractModel):
         global_rank_list = np.array(self.aggregate_components(model_outputs))
 
         for i in range(initial_count, self.ensemble_size):
-            print(selected_features)
+            logger.info(f"Select features {selected_features}")
             s_score = Similarity.spearman(global_rank_list, local_rank_list)  # Compute spearman correlation
 
             choice_probability = [1] * total_feature
@@ -88,18 +88,18 @@ class OracleAdaptive(AbstractModel):
             local_rank_list = self.mdl.fit(data_array[:, selected_features])
 
             global_rank_list = np.array(self.aggregate_components(model_outputs))
-            roc_auc = mdl.compute_roc_auc(global_rank_list, Y)
-            print("Ensemble Before {}".format(roc_auc))
+            roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
+            logger.info("Ensemble Before {}".format(roc_auc))
 
             local_roc = self.compute_roc_auc(np.array(self.aggregate_components([local_rank_list, ])), self.Y)
-            print(f"Local {local_roc}")
+            logger.info(f"Local {local_roc}")
             if local_roc > self.threshold:
                 rocs.append(local_roc)
                 model_outputs.append(local_rank_list)
                 global_rank_list = np.array(self.aggregate_components(model_outputs))
-                roc_auc = mdl.compute_roc_auc(global_rank_list, Y)
-                print("Ensemble After {}".format(roc_auc))
-            print('-' * 50)
+                roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
+                logger.info("Ensemble After {}".format(roc_auc))
+            logger.info('-' * 50)
         logger.info("Number of good subspace {}/{}".format(len(rocs), self.ensemble_size))
         logger.info("Maximum roc {}".format(max(rocs)))
         logger.info("Minimum roc {}".format(min(rocs)))
