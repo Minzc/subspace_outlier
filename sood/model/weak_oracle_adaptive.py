@@ -157,7 +157,7 @@ def batch_test():
             for base_model in [kNN.NAME, ]:
                 # =======================================================================================
                 # Model
-                output_path = path_manager.get_model_output(OracleAdaptive.NAME, aggregator, base_model.NAME)
+                output_path = path_manager.get_model_output(OracleAdaptive.NAME, aggregator, base_model)
                 # =======================================================================================
                 with open(output_path, "w") as w:
                     for threshold in [0, 0.3, 0.5, 0.7]:
@@ -169,7 +169,7 @@ def batch_test():
                         precision_at_ns = []
                         # =======================================================================================
                         # Model
-                        mdl = OracleAdaptive(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, base_model.NAME, Y,
+                        mdl = OracleAdaptive(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y,
                                              threshold)
                         # =======================================================================================
                         for _ in tqdm.trange(5):
@@ -193,7 +193,7 @@ def batch_test():
                             Consts.ROC_AUC: np.mean(roc_aucs),
                             Consts.PRECISION_A_N: np.mean(precision_at_ns),
                             Consts.AGGREGATE: aggregator,
-                            Consts.BASE_MODEL: base_model.NAME,
+                            Consts.BASE_MODEL: base_model,
                             Consts.START_DIM: 2,
                             Consts.END_DIM: 1 / 4,
                             Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
