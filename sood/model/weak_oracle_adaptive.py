@@ -71,6 +71,7 @@ class OracleAdaptive(AbstractModel):
         global_rank_list = np.array(self.aggregate_components(model_outputs))
 
         for i in range(initial_count, self.ensemble_size):
+            print(selected_features)
             s_score = Similarity.spearman(global_rank_list, local_rank_list)  # Compute spearman correlation
 
             choice_probability = [1] * total_feature
@@ -83,7 +84,7 @@ class OracleAdaptive(AbstractModel):
 
             feature_size = np.random.randint(self.dim_start, self.dim_end)  # Randomly sample feature size
             selected_features = np.random.choice(feature_index, feature_size,
-                                                 p=choice_probability)  # Randomly select features
+                                                 p=choice_probability, replace=False)  # Randomly select features
             local_rank_list = self.mdl.fit(data_array[:, selected_features])
 
             global_rank_list = np.array(self.aggregate_components(model_outputs))
@@ -95,6 +96,7 @@ class OracleAdaptive(AbstractModel):
             if local_roc > self.threshold:
                 rocs.append(local_roc)
                 model_outputs.append(local_rank_list)
+                global_rank_list = np.array(self.aggregate_components(model_outputs))
                 roc_auc = mdl.compute_roc_auc(global_rank_list, Y)
                 print("Ensemble After {}".format(roc_auc))
             print('-' * 50)
@@ -115,8 +117,8 @@ class OracleAdaptive(AbstractModel):
 
 
 if __name__ == '__main__':
-    dataset = Dataset.ARRHYTHMIA
-    aggregator = Aggregator.COUNT_RANK_THRESHOLD
+    dataset = Dataset.MNIST_ODDS
+    aggregator = Aggregator.AVERAGE
     threshold = 0
 
     X, Y = DataLoader.load(dataset)
@@ -126,7 +128,7 @@ if __name__ == '__main__':
     logger.info(f"{dataset} {aggregator} {threshold}")
     roc_aucs = []
     precision_at_ns = []
-    mdl = OracleAdaptive(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
+    mdl = OracleAdaptive(2, dim /4, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
     for _ in tqdm.trange(1):
         try:
             rst = mdl.run(X)

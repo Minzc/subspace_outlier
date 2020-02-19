@@ -56,9 +56,12 @@ class Similarity:
         assert target_list[target_outlying_idx[0]] >= target_list[target_outlying_idx[1]],\
             f"Score {target_list[target_outlying_idx[0]]} {target_list[target_outlying_idx[1]]}"
         if if_weighted:
-            return wpearsonr(target_list, local_list, w=weights)
+            score = wpearsonr(target_list, local_list, w=weights)
         else:
-            return wpearsonr(target_list, local_list, w=weights)
+            score = wpearsonr(target_list, local_list, w=weights)
+        if np.isnan(score) == True:
+            return 0
+        return score
 
 class Normalize:
     ZSCORE = "zscore"

@@ -14,6 +14,12 @@ import numpy as np
 logger = getLogger(__name__)
 
 
+# ======================
+# Reference:
+#   LSCP: Locally Selective Combination of Parallel Outlier Ensembles. SDM 2019
+# Source: https://pyod.readthedocs.io/en/latest/pyod.models.html#module-pyod.models.lscp
+# ======================
+
 class Lscp(AbstractModel):
     NAME = "LSCP"
 
