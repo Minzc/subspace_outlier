@@ -3,7 +3,7 @@
 #
 
 from __future__ import absolute_import, division, print_function, unicode_literals
-
+from scipy.stats import kurtosis
 import tqdm
 from sood.data_process.data_loader import DataLoader, Dataset
 from pyod.utils.stat_models import wpearsonr
@@ -11,6 +11,7 @@ from sood.log import getLogger
 from scipy.stats import spearmanr
 from sood.model.abs_model import AbstractModel, Aggregator
 import numpy as np
+from scipy.stats.stats import moment
 
 from sood.model.base_detectors import kNN
 
@@ -35,7 +36,8 @@ class GreedyVariance(AbstractModel):
         model_outputs = []
         total_feature = data_array.shape[1]
         feature_index = np.array([i for i in range(total_feature)])
-        feature_w = np.std(data_array, axis=0)
+        feature_w = -kurtosis(data_array, axis=0)
+
         logger.info("STD : {}".format(feature_w.shape))
         feature_w = np.exp(feature_w)
         normalizer = sum(feature_w)
@@ -82,29 +84,10 @@ class GreedyVariance(AbstractModel):
             return Aggregator.average_threshold(model_outputs, 2)
 
 
-def test_threshold():
-    for dataset in [Dataset.ARRHYTHMIA, Dataset.OPTDIGITS, Dataset.MUSK, Dataset.MNIST_ODDS]:
-        for aggregator in [Aggregator.COUNT_STD_THRESHOLD, Aggregator.AVERAGE_THRESHOLD]:
-            for threshold in [0, 0.5, 0.7, 0.9]:
-                X, Y = DataLoader.load(dataset)
-                dim = X.shape[1]
-                neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-                ENSEMBLE_SIZE = 100
-                logger.info(f"{dataset} {aggregator} {threshold}")
-                mdl = GreedyVariance(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
-                try:
-                    rst = mdl.run(X)
-                    roc_auc = mdl.compute_roc_auc(rst, Y)
-                    logger.info("Final ROC {}".format(roc_auc))
-                    precision_at_n = mdl.compute_precision_at_n(rst, Y)
-                    logger.info("Precision@n {}".format(precision_at_n))
-                except Exception as e:
-                    logger.exception(e)
-
-
 def test_greedy_threshold():
     for dataset in [Dataset.ARRHYTHMIA, Dataset.OPTDIGITS, Dataset.MUSK, Dataset.MNIST_ODDS]:
-        for aggregator in [Aggregator.COUNT_STD_THRESHOLD, Aggregator.AVERAGE_THRESHOLD, Aggregator.AVERAGE, Aggregator.COUNT_RANK_THRESHOLD]:
+        for aggregator in [Aggregator.COUNT_STD_THRESHOLD, Aggregator.AVERAGE_THRESHOLD, Aggregator.AVERAGE,
+                           Aggregator.COUNT_RANK_THRESHOLD]:
             for threshold in [0, 0.5, 0.7, 0.9]:
                 X, Y = DataLoader.load(dataset)
                 dim = X.shape[1]
@@ -131,5 +114,33 @@ def test_greedy_threshold():
                 logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
                 logger.info(f"====================================================")
 
+
 if __name__ == '__main__':
-    test_greedy_threshold()
+    dataset = Dataset.MNIST_ODDS
+    aggregator = Aggregator.COUNT_STD_THRESHOLD
+    threshold = 0
+
+    X, Y = DataLoader.load(dataset)
+    dim = X.shape[1]
+    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+    ENSEMBLE_SIZE = 100
+    logger.info(f"{dataset} {aggregator} {threshold}")
+    roc_aucs = []
+    precision_at_ns = []
+    mdl = GreedyVariance(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
+    for _ in tqdm.trange(1):
+        try:
+            rst = mdl.run(X)
+            roc_auc = mdl.compute_roc_auc(rst, Y)
+            logger.info("Final ROC {}".format(roc_auc))
+            precision_at_n = mdl.compute_precision_at_n(rst, Y)
+            logger.info("Precision@n {}".format(precision_at_n))
+
+            roc_aucs.append(roc_auc)
+            precision_at_ns.append(precision_at_n)
+        except Exception as e:
+            logger.exception(e)
+    logger.info(f"Exp Information {dataset} {aggregator} {threshold}")
+    logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
+    logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
+    logger.info(f"====================================================")
