@@ -88,7 +88,7 @@ class OracleAdaptive(AbstractModel):
         global_rank_list = np.array(self.aggregate_components(model_outputs))
 
         for i in range(initial_count, self.ensemble_size):
-            s_score = spearman(global_rank_list, local_rank_list)
+            s_score = spearman(global_rank_list, local_rank_list) # Compute spearman correlation
 
             choice_probability = [1] * total_feature
             for f_idx in selected_features:
@@ -103,7 +103,6 @@ class OracleAdaptive(AbstractModel):
                                                  p=choice_probability)  # Randomly select features
             local_rank_list = self.mdl.fit(data_array[:, selected_features])
 
-            model_outputs.append(local_rank_list)
             global_rank_list = np.array(self.aggregate_components(model_outputs))
             roc_auc = mdl.compute_roc_auc(global_rank_list, Y)
             print("Ensemble Before {}".format(roc_auc))
@@ -123,7 +122,7 @@ class OracleAdaptive(AbstractModel):
 
     def aggregate_components(self, model_outputs):
         if self.aggregate_method == Aggregator.COUNT_RANK_THRESHOLD:
-            return Aggregator.count_rank_threshold(model_outputs, 100)
+            return Aggregator.count_rank_threshold(model_outputs, 0.05)
         elif self.aggregate_method == Aggregator.AVERAGE:
             return Aggregator.average(model_outputs)
         elif self.aggregate_method == Aggregator.COUNT_STD_THRESHOLD:
@@ -133,9 +132,9 @@ class OracleAdaptive(AbstractModel):
 
 
 if __name__ == '__main__':
-    dataset = Dataset.ARRHYTHMIA
+    dataset = Dataset.OPTDIGITS
     aggregator = Aggregator.COUNT_STD_THRESHOLD
-    threshold = 0.5
+    threshold = 0
 
     X, Y = DataLoader.load(dataset)
     dim = X.shape[1]

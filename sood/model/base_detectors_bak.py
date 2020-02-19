@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
-from scipy.spatial.distance import cdist
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.neighbors import NearestNeighbors
@@ -78,29 +77,6 @@ class kNN(KNN):
         logger.info(f"After data shape {X.shape}")
         return super().decision_function(X)
 
-class GKE:
-    NAME = "GKE"
-
-    def __init__(self, neighbor, if_normalize):
-        self.if_normalize = if_normalize
-
-    def fit(self, data: np.array):
-        stds = np.std(data, axis=0)
-        for idx, i in enumerate(stds):
-            if i == 0:
-                data[:, idx] = 0
-                stds[idx] = 1
-        data = data / stds
-        def compute(u, v):
-            return ((u - v) ** 2).sum()
-        pairwise_distance = cdist(data, data, compute)
-        pairwise_distance = np.exp(-pairwise_distance)
-        pairwise_distance = np.sum(pairwise_distance, axis=1)
-        score = pairwise_distance
-        if self.if_normalize:
-            return normalize_z_score(-score)
-        else:
-            return -score
 
 def test():
     X, Y = DataLoader.load(Dataset.MUSK)
