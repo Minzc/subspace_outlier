@@ -8,7 +8,7 @@ import tqdm
 from sood.data_process.data_loader import DataLoader, Dataset
 from sood.log import getLogger
 from sood.model.abs_model import AbstractModel, Aggregator
-from sood.util import Similarity, PathManager, Consts
+from sood.util import Similarity, PathManager, Consts, Normalize
 import numpy as np
 
 from sood.model.base_detectors import kNN
@@ -140,7 +140,7 @@ def batch_test():
             for base_model in [kNN.NAME, ]:
                 # =======================================================================================
                 # Model
-                output_path = path_manager.get_model_output(OracleAdaptive.NAME, aggregator, base_model)
+                output_path = path_manager.get_batch_test_model_output(OracleAdaptive.NAME, aggregator, base_model, "DEFAULT")
                 # =======================================================================================
                 with open(output_path, "w") as w:
                     for threshold in [0, ]:
@@ -182,7 +182,7 @@ def batch_test():
                             Consts.END_DIM: 1 / 4,
                             Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
                         }
-                        w.write(f"{json.dumps(output)}")
+                        w.write(f"{json.dumps(output)}\n")
                         logger.info(f"Output file is {output_path}")
 
 
