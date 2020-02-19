@@ -132,8 +132,8 @@ class OracleAdaptive(AbstractModel):
 
 
 if __name__ == '__main__':
-    dataset = Dataset.OPTDIGITS
-    aggregator = Aggregator.COUNT_STD_THRESHOLD
+    dataset = Dataset.MNIST_ODDS
+    aggregator = Aggregator.AVERAGE_THRESHOLD
     threshold = 0
 
     X, Y = DataLoader.load(dataset)
