@@ -141,7 +141,7 @@ import json
 logger = getLogger(__name__)
 
 path_manager = PathManager()
-dataset_name = Dataset.VERTEBRAL
+dataset_name = Dataset.ECOLI
 dataset = Dataset(dataset_name)
 
 speech = loadmat(dataset.mat_file_path)

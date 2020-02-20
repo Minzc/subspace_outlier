@@ -49,20 +49,23 @@ class LOF:
             return -self.lof.negative_outlier_factor_
 
 
-class kNN_GPU(KNN):
+class kNN_GPU:
     NAME = "kNN"
 
     def __init__(self, neighbor_size: int, norm_method: str):
-        super().__init__(n_neighbors=neighbor_size, method='mean', metric='euclidean')
         assert norm_method in {Normalize.UNIFY, Normalize.ZSCORE, None}
         self.neighbor_size = neighbor_size
         self.norm_method = norm_method
 
     def fit(self, data, y=None):
-        super().fit(data)
-        score = self.decision_scores_
+        import torch
+        data = torch.tensor(data, device="cuda:0")
+        dist_matrix = torch.norm(data[:, None] - data, dim=2, p=2)
+        top_k_nearest = torch.topk(dist_matrix, k=self.neighbor_size + 1, dim=1, largest=False)[0]
+        score = torch.sum(top_k_nearest, dim=1).numpy()
 
-        logger.debug(f"KNN score shape : {score.shape}")
+        logger.debug(f"KNN score matrix: {dist_matrix.shape}")
+
         if self.norm_method == Normalize.ZSCORE:
             return Normalize.zscore(score)
         elif self.norm_method == Normalize.UNIFY:
@@ -140,14 +143,15 @@ class GKE:
             return score
 
 def test():
-    X, Y = DataLoader.load(Dataset.MUSK)
+    X, Y = DataLoader.load(Dataset.GLASS)
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    knn = kNN(neigh, if_normalize=False)
+    knn = kNN(neigh, norm_method=None)
     rst = knn.fit(X)
-    y_scores = np.array(rst)
-    print(y_scores)
-    roc_auc = roc_auc_score(Y, y_scores)
-    print(roc_auc)
+    print(rst[:20])
+
+    knn = kNN_GPU(neigh, norm_method=None)
+    rst = knn.fit(X)
+    print(rst[:20])
 
 
 if __name__ == '__main__':
