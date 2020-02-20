@@ -18,7 +18,7 @@ from sood.log import getLogger
 logger = getLogger(__name__)
 
 for dataset in [Dataset.SHUTTLE, Dataset.MAMMOGRAPHY,
-    Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
+                Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
                 Dataset.GLASS, Dataset.PIMA, Dataset.THYROID, ]:
     logger.info("=" * 50)
     logger.info(f"             Dataset {dataset}             ")
@@ -51,8 +51,10 @@ for dataset in [Dataset.SHUTTLE, Dataset.MAMMOGRAPHY,
     inlier_subspaces = y_scores[Y == 0]
     logger.info(f"Outliers: {outlier_subspaces.shape}")
     logger.info(f"Inliers: {inlier_subspaces.shape}")
-    logger.info(f"Outlier Subspaces Min: {np.min(outlier_subspaces)} Max: {np.max(outlier_subspaces)} Mean: {np.mean(outlier_subspaces)}")
-    logger.info(f"Inlier Subspaces Min: {np.min(inlier_subspaces)} Max: {np.max(inlier_subspaces)} Mean: {np.mean(inlier_subspaces)}")
+    logger.info(
+        f"Outlier Subspaces Min: {np.min(outlier_subspaces)} Max: {np.max(outlier_subspaces)} Mean: {np.mean(outlier_subspaces)}")
+    logger.info(
+        f"Inlier Subspaces Min: {np.min(inlier_subspaces)} Max: {np.max(inlier_subspaces)} Mean: {np.mean(inlier_subspaces)}")
     logger.info(f"ROC of Count top-{count_threshold} {roc} Precision {precision}")
 
     count_threshold = 1
