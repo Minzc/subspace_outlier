@@ -51,7 +51,7 @@ def experiment(model):
                         precision_at_ns = []
                         # =======================================================================================
                         # Model
-                        mdl = Model(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y,
+                        mdl = Model(dim/2, dim, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y,
                                     threshold)
                         # =======================================================================================
                         for _ in tqdm.trange(5):
@@ -77,8 +77,8 @@ def experiment(model):
                             Consts.PRECISION_A_N: np.mean(precision_at_ns),
                             Consts.AGGREGATE: aggregator,
                             Consts.BASE_MODEL: base_model,
-                            Consts.START_DIM: 2,
-                            Consts.END_DIM: 1 / 4,
+                            Consts.START_DIM: dim/2,
+                            Consts.END_DIM: dim,
                             Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
                         }
                         w.write(f"{json.dumps(output)}\n")

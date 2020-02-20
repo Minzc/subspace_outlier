@@ -49,6 +49,27 @@ class LOF:
             return -self.lof.negative_outlier_factor_
 
 
+class kNN_GPU(KNN):
+    NAME = "kNN"
+
+    def __init__(self, neighbor_size: int, norm_method: str):
+        super().__init__(n_neighbors=neighbor_size, method='mean', metric='euclidean')
+        assert norm_method in {Normalize.UNIFY, Normalize.ZSCORE, None}
+        self.neighbor_size = neighbor_size
+        self.norm_method = norm_method
+
+    def fit(self, data, y=None):
+        super().fit(data)
+        score = self.decision_scores_
+
+        logger.debug(f"KNN score shape : {score.shape}")
+        if self.norm_method == Normalize.ZSCORE:
+            return Normalize.zscore(score)
+        elif self.norm_method == Normalize.UNIFY:
+            return Normalize.unify(score)
+        else:
+            return score
+
 class kNN(KNN):
     NAME = "kNN"
 
@@ -95,8 +116,8 @@ class kNN_LSCP(KNN):
 class GKE:
     NAME = "GKE"
 
-    def __init__(self, neighbor, if_normalize):
-        self.if_normalize = if_normalize
+    def __init__(self, norm_method: str):
+        self.norm_method = norm_method
 
     def fit(self, data: np.array):
         stds = np.std(data, axis=0)
@@ -110,11 +131,13 @@ class GKE:
         pairwise_distance = cdist(data, data, compute)
         pairwise_distance = np.exp(-pairwise_distance)
         pairwise_distance = np.sum(pairwise_distance, axis=1)
-        score = pairwise_distance
-        if self.if_normalize:
-            return normalize_z_score(-score)
+        score = -pairwise_distance
+        if self.norm_method == Normalize.ZSCORE:
+            return Normalize.zscore(score)
+        elif self.norm_method == Normalize.UNIFY:
+            return Normalize.unify(score)
         else:
-            return -score
+            return score
 
 def test():
     X, Y = DataLoader.load(Dataset.MUSK)
