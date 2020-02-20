@@ -33,6 +33,12 @@ class Dataset:
     SEISMIC = "seismic"
     WINE = "wine"
     VOWELS = "vowels"
+    AD = "ad"
+    APASCAL = "apascal"
+    AID362 = "aid362"
+    BANK = "bank"
+    PROB = "prob"
+    U2R = "u2r"
 
     def __init__(self, dataset):
         path_manager = PathManager()
@@ -42,8 +48,8 @@ class Dataset:
 
     @classmethod
     def supported_dataset(cls):
-        return [cls.ANNTHYROID, cls.VERTEBRAL,
-            cls.MAMMOGRAPHY, cls.ECOLI, cls.BREASTW, cls.SHUTTLE,
+        return [cls.ANNTHYROID, cls.VERTEBRAL, cls.APASCAL, cls.AID362,
+                cls.MAMMOGRAPHY, cls.ECOLI, cls.BREASTW, cls.SHUTTLE,
                 cls.MNIST_ODDS, cls.VERTEBRAL, cls.SEISMIC, cls.WINE,
                 cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.OPTDIGITS,
                 cls.THYROID, cls.PIMA, cls.GLASS, cls.VOWELS]

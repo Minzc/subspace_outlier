@@ -9,6 +9,14 @@ import numpy as np
 import json
 from sood.data_process.data_loader import Dataset
 from sood.util import Consts
+# ==================================================
+# DATASET apascal
+# Instance: 12695
+# Feature: 64
+# Class 1: 0
+# Class 0: 12695
+# Source:
+# ==================================================
 
 arff_data = arff.loadarff("../dataset/apascal/apascal_entire_trainvsall.arff")
 data = []
