@@ -52,7 +52,7 @@ class Dataset:
                 cls.MAMMOGRAPHY, cls.ECOLI, cls.BREASTW, cls.SHUTTLE,
                 cls.MNIST_ODDS, cls.VERTEBRAL, cls.SEISMIC, cls.WINE,
                 cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.OPTDIGITS,
-                cls.THYROID, cls.PIMA, cls.GLASS, cls.VOWELS]
+                cls.THYROID, cls.PIMA, cls.GLASS, cls.VOWELS, cls.AD, cls.AID362, cls.BANK, cls.PROB, cls.U2R]
 
 
 class DataLoader:

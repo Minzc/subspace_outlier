@@ -16,6 +16,7 @@ from sood.model.base_detectors import kNN, GKE, kNN_GPU
 from sood.log import getLogger
 
 logger = getLogger(__name__)
+threshold = 0.5
 
 for dataset in [Dataset.VOWELS, Dataset.WINE,
                 Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
@@ -39,10 +40,12 @@ for dataset in [Dataset.VOWELS, Dataset.WINE,
         for i in combinations(feature_index, l):
             selected_features = np.asarray(i)
             _X = X[:, selected_features]
-            model_outputs.append(mdl.fit(_X))
+            y_scores = mdl.fit(_X)
+            local_roc = roc_auc_score(Y, y_scores)
+            if local_roc > threshold:
+                model_outputs.append(local_roc)
 
     logger.info(f"Total model {len(model_outputs)}")
-
     count_threshold = 0.2
     score = Aggregator.count_rank_threshold(model_outputs, count_threshold)
     y_scores = np.array(score)

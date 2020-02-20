@@ -20,10 +20,11 @@ import tqdm
 logger = getLogger(__name__)
 
 
-def experiment(model, dim_boundary):
+def experiment(model, dim_boundary, threshold):
     import json
     path_manager = PathManager()
     ENSEMBLE_SIZE = 100
+
 
     if model == "fb":
         Model = FB
@@ -32,7 +33,7 @@ def experiment(model, dim_boundary):
     else:
         raise Exception(f"Model not supported {model}")
 
-    threshold = 0
+    threshold = float(threshold)
 
     for dataset in [Dataset.ARRHYTHMIA, Dataset.MUSK, Dataset.MNIST_ODDS, Dataset.OPTDIGITS]:
         for aggregator in [Aggregator.AVERAGE, Aggregator.AVERAGE_THRESHOLD, Aggregator.COUNT_STD_THRESHOLD,
@@ -95,5 +96,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", required=["fb", "oracle"])
     parser.add_argument("-d", required=["low", "high"])
+    parser.add_argument("-t")
     parsedArgs = parser.parse_args(sys.argv[1:])
-    experiment(parsedArgs.m, parsedArgs.d)
+    experiment(parsedArgs.m, parsedArgs.d, parsedArgs.t)

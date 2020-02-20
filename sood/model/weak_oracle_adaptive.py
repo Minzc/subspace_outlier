@@ -100,7 +100,7 @@ class OracleAdaptive(AbstractModel):
 
 
 def single_test():
-    dataset = Dataset.MNIST_ODDS
+    dataset = Dataset.BANK
     aggregator = Aggregator.AVERAGE
     threshold = 0
 
@@ -111,7 +111,7 @@ def single_test():
     logger.info(f"{dataset} {aggregator} {threshold}")
     roc_aucs = []
     precision_at_ns = []
-    mdl = OracleAdaptive(1, dim / 2, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
+    mdl = OracleAdaptive(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, kNN.NAME, Y, threshold)
     for _ in tqdm.trange(1):
         try:
             rst = mdl.run(X)
@@ -140,7 +140,8 @@ def batch_test():
             for base_model in [kNN.NAME, ]:
                 # =======================================================================================
                 # Model
-                output_path = path_manager.get_batch_test_model_output(OracleAdaptive.NAME, aggregator, base_model, "DEFAULT", dataset)
+                output_path = path_manager.get_batch_test_model_output(OracleAdaptive.NAME, aggregator, base_model,
+                                                                       "DEFAULT", dataset)
                 # =======================================================================================
                 with open(output_path, "w") as w:
                     for threshold in [0, ]:
@@ -187,4 +188,4 @@ def batch_test():
 
 
 if __name__ == '__main__':
-    batch_test()
+    single_test()
