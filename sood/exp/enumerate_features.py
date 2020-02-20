@@ -17,7 +17,8 @@ from sood.log import getLogger
 
 logger = getLogger(__name__)
 
-for dataset in [Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
+for dataset in [Dataset.SHUTTLE, Dataset.MAMMOGRAPHY,
+    Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
                 Dataset.GLASS, Dataset.PIMA, Dataset.THYROID, ]:
     logger.info("=" * 50)
     logger.info(f"             Dataset {dataset}             ")

@@ -59,6 +59,7 @@ class kNN_GPU:
 
     def fit(self, data, y=None):
         import torch
+        assert torch.cuda.is_available()
         data = torch.tensor(data, device="cuda:0")
         dist_matrix = torch.norm(data[:, None] - data, dim=2, p=2)
         top_k_nearest = torch.topk(dist_matrix, k=self.neighbor_size + 1, dim=1, largest=False)[0]
