@@ -96,4 +96,4 @@ if __name__ == '__main__':
     parser.add_argument("-m", required=["fb", "oracle"])
     parser.add_argument("-d", required=["low", "high"])
     parsedArgs = parser.parse_args(sys.argv[1:])
-    experiment(parsedArgs.m)
+    experiment(parsedArgs.m, parsedArgs.d)
