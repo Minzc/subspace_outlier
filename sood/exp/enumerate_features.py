@@ -17,9 +17,10 @@ from sood.log import getLogger
 
 logger = getLogger(__name__)
 
-for dataset in [Dataset.SHUTTLE, Dataset.MAMMOGRAPHY,
+for dataset in [Dataset.VOWELS, Dataset.WINE,
                 Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
-                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID, ]:
+                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID,Dataset.SHUTTLE,
+                Dataset.MAMMOGRAPHY, ]:
     logger.info("=" * 50)
     logger.info(f"             Dataset {dataset}             ")
     logger.info("=" * 50)
@@ -30,8 +31,8 @@ for dataset in [Dataset.SHUTTLE, Dataset.MAMMOGRAPHY,
     feature_index = np.array([i for i in range(total_feature)])
 
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    # mdl = kNN(neigh, Normalize.ZSCORE)
-    mdl = kNN_GPU(neigh, Normalize.ZSCORE)
+    mdl = kNN(neigh, Normalize.ZSCORE)
+    # mdl = kNN_GPU(neigh, Normalize.ZSCORE)
     # mdl = GKE(Normalize.ZSCORE)
 
     for l in range(1, len(feature_index) + 1):

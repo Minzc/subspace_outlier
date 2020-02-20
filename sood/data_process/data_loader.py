@@ -30,6 +30,9 @@ class Dataset:
     MAMMOGRAPHY = "mammography"
     ANNTHYROID = "annthyroid"
     VERTEBRAL = "vertebral"
+    SEISMIC = "seismic"
+    WINE = "wine"
+    VOWELS = "vowels"
 
     def __init__(self, dataset):
         path_manager = PathManager()
@@ -41,9 +44,9 @@ class Dataset:
     def supported_dataset(cls):
         return [cls.ANNTHYROID, cls.VERTEBRAL,
             cls.MAMMOGRAPHY, cls.ECOLI, cls.BREASTW, cls.SHUTTLE,
-                cls.MNIST_ODDS,
+                cls.MNIST_ODDS, cls.VERTEBRAL, cls.SEISMIC, cls.WINE,
                 cls.ARRHYTHMIA, cls.SPEECH, cls.MUSK, cls.OPTDIGITS,
-                cls.THYROID, cls.PIMA, cls.GLASS]
+                cls.THYROID, cls.PIMA, cls.GLASS, cls.VOWELS]
 
 
 class DataLoader:

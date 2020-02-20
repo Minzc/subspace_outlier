@@ -46,7 +46,7 @@ class FB(AbstractModel):
             # Randomly sample feature size
             feature_size = np.random.randint(self.dim_start, self.dim_end)
             # Randomly select features
-            selected_features = np.random.choice(feature_index, feature_size)
+            selected_features = np.random.choice(feature_index, feature_size, replace=False)
             _X = data_array[:, selected_features]
             # Process selected dataset
             local_rank_list = self.mdl.fit(_X)

@@ -137,11 +137,29 @@ import json
 # Source:
 # ==================================================
 
+# ==================================================
+# DATASET wine
+# Instance: 129
+# Feature: 13
+# Class 1: 10
+# Class 0: 119.0
+# Source:
+# ==================================================
+
+# ==================================================
+# DATASET vowels
+# Instance: 1456
+# Feature: 12
+# Class 1: 50.0
+# Class 0: 1406.0
+# Source:
+# ==================================================
+
 
 logger = getLogger(__name__)
 
 path_manager = PathManager()
-dataset_name = Dataset.ECOLI
+dataset_name = Dataset.VOWELS
 dataset = Dataset(dataset_name)
 
 speech = loadmat(dataset.mat_file_path)
