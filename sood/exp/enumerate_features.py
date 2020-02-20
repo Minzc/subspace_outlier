@@ -20,7 +20,7 @@ threshold = 0.5
 
 for dataset in [Dataset.VOWELS, Dataset.WINE,
                 Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
-                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID,Dataset.SHUTTLE,
+                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID, Dataset.SHUTTLE,
                 Dataset.MAMMOGRAPHY, ]:
     logger.info("=" * 50)
     logger.info(f"             Dataset {dataset}             ")
@@ -43,40 +43,41 @@ for dataset in [Dataset.VOWELS, Dataset.WINE,
             y_scores = mdl.fit(_X)
             local_roc = roc_auc_score(Y, y_scores)
             if local_roc > threshold:
-                model_outputs.append(local_roc)
+                model_outputs.append(y_scores)
 
     logger.info(f"Total model {len(model_outputs)}")
-    count_threshold = 0.2
-    score = Aggregator.count_rank_threshold(model_outputs, count_threshold)
-    y_scores = np.array(score)
-    roc = roc_auc_score(Y, y_scores)
-    precision = precision_n_scores(Y, y_scores)
-    outlier_subspaces = y_scores[Y == 1]
-    inlier_subspaces = y_scores[Y == 0]
-    logger.info(f"Outliers: {outlier_subspaces.shape}")
-    logger.info(f"Inliers: {inlier_subspaces.shape}")
-    logger.info(
-        f"Outlier Subspaces Min: {np.min(outlier_subspaces)} Max: {np.max(outlier_subspaces)} Mean: {np.mean(outlier_subspaces)}")
-    logger.info(
-        f"Inlier Subspaces Min: {np.min(inlier_subspaces)} Max: {np.max(inlier_subspaces)} Mean: {np.mean(inlier_subspaces)}")
-    logger.info(f"ROC of Count top-{count_threshold} {roc} Precision {precision}")
+    if len(model_outputs) > 0:
+        count_threshold = 0.2
+        score = Aggregator.count_rank_threshold(model_outputs, count_threshold)
+        y_scores = np.array(score)
+        roc = roc_auc_score(Y, y_scores)
+        precision = precision_n_scores(Y, y_scores)
+        outlier_subspaces = y_scores[Y == 1]
+        inlier_subspaces = y_scores[Y == 0]
+        logger.info(f"Outliers: {outlier_subspaces.shape}")
+        logger.info(f"Inliers: {inlier_subspaces.shape}")
+        logger.info(
+            f"Outlier Subspaces Min: {np.min(outlier_subspaces)} Max: {np.max(outlier_subspaces)} Mean: {np.mean(outlier_subspaces)}")
+        logger.info(
+            f"Inlier Subspaces Min: {np.min(inlier_subspaces)} Max: {np.max(inlier_subspaces)} Mean: {np.mean(inlier_subspaces)}")
+        logger.info(f"ROC of Count top-{count_threshold} {roc} Precision {precision}")
 
-    count_threshold = 1
-    score = Aggregator.count_std_threshold(model_outputs, count_threshold)
-    y_scores = np.array(score)
-    roc = roc_auc_score(Y, y_scores)
-    precision = precision_n_scores(Y, y_scores)
-    logger.info(f"ROC of Count {count_threshold}-std {roc} Precision {precision}")
+        count_threshold = 1
+        score = Aggregator.count_std_threshold(model_outputs, count_threshold)
+        y_scores = np.array(score)
+        roc = roc_auc_score(Y, y_scores)
+        precision = precision_n_scores(Y, y_scores)
+        logger.info(f"ROC of Count {count_threshold}-std {roc} Precision {precision}")
 
-    score = Aggregator.average(model_outputs)
-    y_scores = np.array(score)
-    roc = roc_auc_score(Y, y_scores)
-    precision = precision_n_scores(Y, y_scores)
-    logger.info(f"ROC of Average {roc} Precision {precision}")
+        score = Aggregator.average(model_outputs)
+        y_scores = np.array(score)
+        roc = roc_auc_score(Y, y_scores)
+        precision = precision_n_scores(Y, y_scores)
+        logger.info(f"ROC of Average {roc} Precision {precision}")
 
-    average_threshold = 1
-    score = Aggregator.average_threshold(model_outputs, average_threshold)
-    y_scores = np.array(score)
-    roc = roc_auc_score(Y, y_scores)
-    precision = precision_n_scores(Y, y_scores)
-    logger.info(f"ROC of Average {average_threshold}-std {roc} Precision {precision}")
+        average_threshold = 1
+        score = Aggregator.average_threshold(model_outputs, average_threshold)
+        y_scores = np.array(score)
+        roc = roc_auc_score(Y, y_scores)
+        precision = precision_n_scores(Y, y_scores)
+        logger.info(f"ROC of Average {average_threshold}-std {roc} Precision {precision}")
