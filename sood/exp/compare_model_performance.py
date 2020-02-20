@@ -20,7 +20,7 @@ import tqdm
 logger = getLogger(__name__)
 
 
-def experiment(model):
+def experiment(model, dim_boundary):
     import json
     path_manager = PathManager()
     ENSEMBLE_SIZE = 100
@@ -32,57 +32,61 @@ def experiment(model):
     else:
         raise Exception(f"Model not supported {model}")
 
+    threshold = 0
+
     for dataset in [Dataset.ARRHYTHMIA, Dataset.MUSK, Dataset.MNIST_ODDS, Dataset.OPTDIGITS]:
         for aggregator in [Aggregator.AVERAGE, Aggregator.AVERAGE_THRESHOLD, Aggregator.COUNT_STD_THRESHOLD,
                            Aggregator.COUNT_RANK_THRESHOLD]:
             for base_model in [kNN.NAME, ]:
+                X, Y = DataLoader.load(dataset)
+                dim = X.shape[1]
+                neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+                logger.info(f"{dataset} {aggregator} {threshold}")
+                roc_aucs = []
+                precision_at_ns = []
                 # =======================================================================================
                 # Model
+                if dim_boundary == "high":
+                    start_dim = dim / 2
+                    end_dim = dim
+                else:
+                    start_dim = 2
+                    end_dim = dim / 4
+                mdl = Model(start_dim, end_dim, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y, threshold)
                 output_path = path_manager.get_batch_test_model_output(Model.NAME, aggregator, base_model,
-                                                                       "DEFAULT", dataset)
+                                                                       "DEFAULT", dataset, start_dim, end_dim)
+                logger.info(f"Output File {output_path}")
                 # =======================================================================================
-                with open(output_path, "w") as w:
-                    for threshold in [0, ]:
-                        X, Y = DataLoader.load(dataset)
-                        dim = X.shape[1]
-                        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-                        logger.info(f"{dataset} {aggregator} {threshold}")
-                        roc_aucs = []
-                        precision_at_ns = []
-                        # =======================================================================================
-                        # Model
-                        mdl = Model(dim/2, dim, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y,
-                                    threshold)
-                        # =======================================================================================
-                        for _ in tqdm.trange(5):
-                            try:
-                                rst = mdl.run(X)
-                                # Throw exception if no satisfied subspaces are found
-                                roc_auc = mdl.compute_roc_auc(rst, Y)
-                                logger.info("Final ROC {}".format(roc_auc))
-                                precision_at_n = mdl.compute_precision_at_n(rst, Y)
-                                logger.info("Precision@n {}".format(precision_at_n))
+                for _ in tqdm.trange(5):
+                    try:
+                        rst = mdl.run(X)
+                        # Throw exception if no satisfied subspaces are found
+                        roc_auc = mdl.compute_roc_auc(rst, Y)
+                        logger.info("Final ROC {}".format(roc_auc))
+                        precision_at_n = mdl.compute_precision_at_n(rst, Y)
+                        logger.info("Precision@n {}".format(precision_at_n))
 
-                                roc_aucs.append(roc_auc)
-                                precision_at_ns.append(precision_at_n)
-                            except Exception as e:
-                                logger.exception(e)
-                        logger.info(f"Exp Information {dataset} {aggregator} {threshold}")
-                        logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
-                        logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
-                        logger.info(f"====================================================")
-                        output = {
-                            Consts.DATA: dataset,
-                            Consts.ROC_AUC: np.mean(roc_aucs),
-                            Consts.PRECISION_A_N: np.mean(precision_at_ns),
-                            Consts.AGGREGATE: aggregator,
-                            Consts.BASE_MODEL: base_model,
-                            Consts.START_DIM: dim/2,
-                            Consts.END_DIM: dim,
-                            Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
-                        }
-                        w.write(f"{json.dumps(output)}\n")
-                        logger.info(f"Output file is {output_path}")
+                        roc_aucs.append(roc_auc)
+                        precision_at_ns.append(precision_at_n)
+                    except Exception as e:
+                        logger.exception(e)
+                logger.info(f"Exp Information {dataset} {aggregator} {threshold}")
+                logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
+                logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
+                logger.info(f"====================================================")
+                output = {
+                    Consts.DATA: dataset,
+                    Consts.ROC_AUC: np.mean(roc_aucs),
+                    Consts.PRECISION_A_N: np.mean(precision_at_ns),
+                    Consts.AGGREGATE: aggregator,
+                    Consts.BASE_MODEL: base_model,
+                    Consts.START_DIM: start_dim,
+                    Consts.END_DIM: end_dim,
+                    Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
+                }
+                with open(output_path, "w") as w:
+                    w.write(f"{json.dumps(output)}\n")
+                    logger.info(f"Output file is {output_path}")
 
 
 if __name__ == '__main__':
@@ -90,5 +94,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", required=["fb", "oracle"])
+    parser.add_argument("-d", required=["low", "high"])
     parsedArgs = parser.parse_args(sys.argv[1:])
     experiment(parsedArgs.m)
