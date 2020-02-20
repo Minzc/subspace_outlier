@@ -20,8 +20,7 @@ threshold = 0.5
 
 for dataset in [Dataset.VOWELS, Dataset.WINE,
                 Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
-                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID, Dataset.SHUTTLE,
-                Dataset.MAMMOGRAPHY, ]:
+                Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
     logger.info("=" * 50)
     logger.info(f"             Dataset {dataset}             ")
     logger.info("=" * 50)
