@@ -12,7 +12,7 @@ from sklearn.metrics import roc_auc_score
 from sood.util import Normalize
 from sood.model.abs_model import Aggregator
 from sood.data_process.data_loader import DataLoader, Dataset
-from sood.model.base_detectors import kNN, GKE
+from sood.model.base_detectors import kNN, GKE, kNN_GPU
 from sood.log import getLogger
 
 logger = getLogger(__name__)
@@ -29,7 +29,8 @@ for dataset in [Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
     feature_index = np.array([i for i in range(total_feature)])
 
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    mdl = kNN(neigh, Normalize.ZSCORE)
+    # mdl = kNN(neigh, Normalize.ZSCORE)
+    mdl = kNN_GPU(neigh, Normalize.ZSCORE)
     # mdl = GKE(Normalize.ZSCORE)
 
     for l in range(1, len(feature_index) + 1):
