@@ -53,8 +53,10 @@ def compare_auc():
                                             ("AVG", Aggregator.average_threshold, 1),
                                             ("AVG", Aggregator.average_threshold, 2),
                                             ]:
-
-            y_scores = np.array(aggregator(model_outputs, threshold))
+            if threshold is not None:
+                y_scores = np.array(aggregator(model_outputs, threshold))
+            else:
+                y_scores = np.array(aggregator(model_outputs))
             roc = roc_auc_score(Y, y_scores)
             precision = precision_n_scores(Y, y_scores)
             logger.info(f"ROC of {name}-{threshold} {roc} Precision {precision}")
