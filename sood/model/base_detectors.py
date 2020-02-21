@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 import numpy as np
+import torch
 from scipy.spatial.distance import cdist
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import LocalOutlierFactor
@@ -117,7 +118,7 @@ class kNN_LSCP(KNN):
         logger.info(f"After data shape {X.shape}")
         return super().decision_function(X)
 
-class GKE:
+class GKE_GPU:
     NAME = "GKE"
 
     def __init__(self, norm_method: str):
@@ -125,17 +126,18 @@ class GKE:
 
     def fit(self, data: np.array):
         stds = np.std(data, axis=0)
-        for idx, i in enumerate(stds):
-            if i == 0:
-                data[:, idx] = 0
-                stds[idx] = 1
+        stds[stds == 0] = 1
+        n = np.math.pow(data.shape[0], 1.0/3)
+        stds = stds * n * 1.06
+
         data = data / stds
-        def compute(u, v):
-            return ((u - v) ** 2).sum()
-        pairwise_distance = cdist(data, data, compute)
-        pairwise_distance = np.exp(-pairwise_distance)
-        pairwise_distance = np.sum(pairwise_distance, axis=1)
+        data = torch.tensor(data, dtype=torch.float64, device="cuda:0")
+        pairwise_distance = torch.cdist(data, data, 2)
+        pairwise_distance = pairwise_distance * pairwise_distance * -1
+        pairwise_distance = torch.exp(pairwise_distance)
+        pairwise_distance = torch.sum(pairwise_distance, axis=1)
         score = -pairwise_distance
+
         if self.norm_method == Normalize.ZSCORE:
             return Normalize.zscore(score)
         elif self.norm_method == Normalize.UNIFY:
@@ -143,40 +145,42 @@ class GKE:
         else:
             return score
 
-class GKE_EST:
-    NAME = "GKE"
-
-    def __init__(self, norm_method: str, neighbor):
-        self.norm_method = norm_method
-
-    def fit(self, data: np.array):
-        stds = np.std(data, axis=0)
-        for idx, i in enumerate(stds):
-            if i == 0:
-                data[:, idx] = 0
-                stds[idx] = 1
-        data = data / stds
-        def compute(u, v):
-            return ((u - v) ** 2).sum()
-        pairwise_distance = cdist(data, data, compute)
-        pairwise_distance = np.exp(-pairwise_distance)
-        pairwise_distance = np.sum(pairwise_distance, axis=1)
-        score = -pairwise_distance
-        if self.norm_method == Normalize.ZSCORE:
-            return Normalize.zscore(score)
-        elif self.norm_method == Normalize.UNIFY:
-            return Normalize.unify(score)
-        else:
-            return score
+# class GKE_EST:
+#     NAME = "GKE"
+#
+#     def __init__(self, norm_method: str, neighbor):
+#         self.norm_method = norm_method
+#
+#     def fit(self, data: np.array):
+#         stds = np.std(data, axis=0)
+#         for idx, i in enumerate(stds):
+#             if i == 0:
+#                 data[:, idx] = 0
+#                 stds[idx] = 1
+#         data = data / stds
+#
+#         pairwise_distance = torch.cdist(data, data, 2)
+#         pairwise_distance = pairwise_distance * pairwise_distance * -1
+#         pairwise_distance = torch.exp(pairwise_distance)
+#         pairwise_distance = torch.sum(pairwise_distance, axis=1)
+#         score = -pairwise_distance
+#
+#         if self.norm_method == Normalize.ZSCORE:
+#             return Normalize.zscore(score)
+#         elif self.norm_method == Normalize.UNIFY:
+#             return Normalize.unify(score)
+#         else:
+#             return score
 
 def test():
     X = np.array([
         [1,2],
-        [4,5],
-        [7,8]
+        [3,4],
+        [5,6]
     ])
-    mdl = GKE(None)
-    mdl.fit(X)
+    mdl = GKE_GPU(None)
+    score = mdl.fit(X)
+    print(score)
 
 
 if __name__ == '__main__':

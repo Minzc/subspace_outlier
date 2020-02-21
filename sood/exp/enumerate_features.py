@@ -317,17 +317,22 @@ if __name__ == '__main__':
         x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
         x2_norm = x2.pow(2).sum(dim=-1, keepdim=True)
         res = torch.addmm(x2_norm.transpose(-2, -1), x1, x2.transpose(-2, -1), alpha=-2).add_(x1_norm)
-        res = res.clamp_min_(1e-30).sqrt_()
-        res = -res * res
-        print(res)
+        res = res.clamp_min_(1e-30)
+        print("1", res)
+        res = res * -1.0
+        print("2", res)
         res = torch.exp(res)
         print(res)
+        print(res)
         return res
-    a = torch.tensor([[1,2], [3,4], [5,6]], dtype=torch.float)
+    a = torch.tensor([[1,2], [3,4], [5,6]], dtype=torch.float64)
     rst = my_cdist(a, a)
     print(rst)
     rst =  torch.cdist(a, a, 2)
     print(rst)
-    rst = torch.pdist(a, 2)
+    rst = rst * rst * -1
     print(rst)
-    print(a * a)
+    rst = torch.exp(rst)
+    print(rst)
+    rst = torch.sum(rst, axis=1)
+    print(rst)
