@@ -71,7 +71,7 @@ class FB(AbstractModel):
 
     def aggregate_components(self, model_outputs):
         if self.aggregate_method == Aggregator.COUNT_RANK_THRESHOLD:
-            return Aggregator.count_rank_threshold(model_outputs, 0.05)
+            return Aggregator.count_rank_threshold(model_outputs, 0.2)
         elif self.aggregate_method == Aggregator.AVERAGE:
             return Aggregator.average(model_outputs)
         elif self.aggregate_method == Aggregator.COUNT_STD_THRESHOLD:
