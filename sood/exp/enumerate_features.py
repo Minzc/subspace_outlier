@@ -9,7 +9,7 @@ from itertools import combinations
 import time
 import numpy as np
 import matplotlib
-
+import json
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -25,6 +25,51 @@ logger = getLogger(__name__)
 
 
 def compare_auc():
+    outputs = defaultdict(dict)
+    for dataset in [Dataset.VOWELS, Dataset.WINE,
+                    Dataset.BREASTW, Dataset.ANNTHYROID,
+                    Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
+        logger.info("=" * 50)
+        logger.info(f"             Dataset {dataset}             ")
+        logger.info("=" * 50)
+        _X, Y = DataLoader.load(dataset)
+        outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
+        feature_index = np.array([i for i in range(_X.shape[1])])
+        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
+        # mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
+        mdl = GKE_GPU(Normalize.ZSCORE)
+
+        model_outputs = []
+        for l in range(1, len(feature_index) + 1):
+            for i in combinations(feature_index, l):
+                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
+
+        logger.info(f"Total model {len(model_outputs)}")
+        for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
+                                            ("RANK", Aggregator.count_rank_threshold, 0.10),
+                                            ("STD", Aggregator.count_std_threshold, 1),
+                                            ("STD", Aggregator.count_std_threshold, 2),
+                                            ("AVG", Aggregator.average, None),
+                                            ("AVG", Aggregator.average_threshold, 1),
+                                            ("AVG", Aggregator.average_threshold, 2),
+                                            ]:
+
+            y_scores = np.array(aggregator(model_outputs, threshold))
+            roc = roc_auc_score(Y, y_scores)
+            precision = precision_n_scores(Y, y_scores)
+            logger.info(f"ROC of {name}-{threshold} {roc} Precision {precision}")
+            outputs[dataset][f"{name}_{threshold}"] = {
+                "roc": roc,
+                "precision": precision
+            }
+
+    output_file = f"performance.json"
+    with open(output_file, "w") as w:
+        w.write(f"{json.dumps(outputs)}\n")
+    logger.info(f"Output file {output_file}")
+
+
+
     threshold = 0
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
@@ -222,8 +267,8 @@ def subspace_count_per_point():
             logger.info(f"Inlier dist density {inlier_hist_percent}")
 
             outputs[f"{name}_{threshold}"][dataset] = {
-                "outlier": [zero_subspaces_outlier, ] + outlier_hist_percent.tolist(),
-                "inlier": [zero_subspaces_inlier, ] + inlier_hist_percent.tolist(),
+                "outlier": outlier_hist_percent.tolist(),
+                "inlier": inlier_hist_percent.tolist(),
                 "bin": bin,
                 "outlier_mean": np.mean(outlier_subspaces),
                 "inlier_mean": np.mean(inlier_subspaces),
@@ -250,8 +295,8 @@ def plot_subspace_count_per_point():
         print(aggregator, threshold)
         for dataset, data in data_rst.items():
             f, ax = plt.subplots(1, figsize=(4, 2))
-            x_locs = np.arange(BIN_NUM)
-            width = 0.5
+            x_locs = np.arange(BIN_NUM + 1)
+            width = 0.3
 
             outlier_hist_percent = data["outlier"]
             inlier_hist_percent = data["inlier"]
@@ -290,7 +335,7 @@ def plot_point_count_per_dim():
         for dataset, data in data_rst.items():
             f, ax = plt.subplots(1)
             x_locs = np.arange(len(data["feature_index"]))
-            width = 0.5
+            width = 0.3
             bar1 = ax.bar(x_locs - width / 2, data["outlier"], width, label="Outlier")
             bar2 = ax.bar(x_locs + width / 2, data["inlier"], width, label="Inlier")
             ax.set_xticks(x_locs)
@@ -309,4 +354,4 @@ def plot_point_count_per_dim():
 
 
 if __name__ == '__main__':
-    subspace_count_per_point()
+    compare_auc()
