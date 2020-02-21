@@ -93,7 +93,6 @@ def compare_auc():
 def compare_dim_dist():
     import json
     outputs = {}
-    count_threshold = 1
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
                     Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
@@ -103,62 +102,45 @@ def compare_dim_dist():
         _X, Y = DataLoader.load(dataset)
         feature_index = np.array([i for i in range(_X.shape[1])])
         X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
-
         outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
 
         mdl = GKE_GPU(Normalize.ZSCORE)
 
-        subspace_dim_outlier_1, subspace_dim_inlier_1 = defaultdict(set), defaultdict(set)
-        subspace_dim_outlier_2, subspace_dim_inlier_2 = defaultdict(set), defaultdict(set)
 
-        outlier_dim_hist_1 = [0] * len(feature_index)
-        inlier_dim_hist_1 = [0] * len(feature_index)
-        outlier_dim_hist_2 = [0] * len(feature_index)
-        inlier_dim_hist_2 = [0] * len(feature_index)
-
+        model_outputs_all = defaultdict(list)
         for l in range(1, len(feature_index) + 1):
-            model_outputs = []
             for i in combinations(feature_index, l):
-                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
+                model_outputs_all[l].append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
 
-            for count_threshold in [1, 2]:
-                y_scores = np.array(Aggregator.count_std_threshold(model_outputs, count_threshold))
+        assert len(model_outputs_all) == len(feature_index)
+
+        for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
+                                      ("RANK", Aggregator.count_rank_threshold, 0.10),
+                                      ("STD", Aggregator.count_std_threshold, 1),
+                                      ("STD", Aggregator.count_std_threshold, 2)]:
+            dim_outlier_ratio = [0] * len(feature_index)
+            dim_inlier_ratio = [0] * len(feature_index)
+
+            for l, model_outputs in model_outputs_all.items():
+                y_scores = np.array(aggregator(model_outputs, threshold))
                 outlier_subspaces = y_scores[Y == 1]
                 inlier_subspaces = y_scores[Y == 0]
+
+                dim_outlier_idx = set()
                 for idx, score in enumerate(outlier_subspaces):
                     if score > 0:
-                        if count_threshold == 1:
-                            subspace_dim_outlier_1[l].add(idx)
-                        elif count_threshold == 2:
-                            subspace_dim_outlier_2[l].add(idx)
+                        dim_outlier_idx.add(idx)
+                dim_outlier_ratio[l - 1] = len(dim_outlier_idx) / outlier_num
 
+                dim_inlier_idx = set()
                 for idx, score in enumerate(inlier_subspaces):
                     if score > 0:
-                        if count_threshold == 1:
-                            subspace_dim_inlier_1[l].add(idx)
-                        elif count_threshold == 2:
-                            subspace_dim_inlier_2[l].add(idx)
+                        dim_inlier_idx.add(idx)
+                dim_inlier_ratio[l - 1] = len(dim_inlier_idx) / inlier_num
+            outputs[f"{name}_{threshold}_outlier"] = dim_outlier_ratio
+            outputs[f"{name}_{threshold}_inlier"] = dim_inlier_ratio
 
-
-        for l, points in subspace_dim_outlier_1.items():
-            outlier_dim_hist_1[l - 1] = len(points) / outlier_num
-        for l, points in subspace_dim_inlier_1.items():
-            inlier_dim_hist_1[l - 1] = len(points) / inlier_num
-
-        for l, points in subspace_dim_outlier_2.items():
-            outlier_dim_hist_2[l - 1] = len(points) / outlier_num
-        for l, points in subspace_dim_inlier_2.items():
-            inlier_dim_hist_2[l - 1] = len(points) / inlier_num
-
-        outputs[dataset] = {
-            "outlier_1": outlier_dim_hist_1,
-            "inlier_1": inlier_dim_hist_1,
-            "outlier_2": outlier_dim_hist_2,
-            "inlier_2": inlier_dim_hist_2,
-            "feature_index": feature_index.tolist(),
-        }
-
-    with open(f"outlying_subspace_dist_std_{count_threshold}.json", "w") as w:
+    with open(f"outlying_subspace_dist.json", "w") as w:
         w.write(f"{json.dumps(outputs)}")
 
 
