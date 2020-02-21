@@ -157,7 +157,7 @@ def autolabel(ax, rects, digits=1):
             counter += 1
 
 
-def compare_hist_dist():
+def subspace_count_per_point():
     import json
     BIN_NUM = 10
     outputs = defaultdict(dict)
@@ -311,4 +311,4 @@ if __name__ == '__main__':
     # print(rst)
     # rst = torch.sum(rst, axis=1)
     # print(rst)
-    compare_dim_dist()
+    subspace_count_per_point()
