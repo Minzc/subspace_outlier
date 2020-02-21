@@ -137,7 +137,8 @@ def point_count_per_dim():
 
             outputs[f"{name}_{threshold}"][dataset] = {
                 "outlier": dim_outlier_ratio,
-                "inlier": dim_inlier_ratio
+                "inlier": dim_inlier_ratio,
+                "feature_index": feature_index.tolist()
             }
 
     with open(f"point_count_per_dim.json", "w") as w:
@@ -190,10 +191,12 @@ def subspace_count_per_point():
             y_scores = np.array(aggregator(model_outputs, threshold))
             outlier_subspaces, inlier_subspaces = y_scores[Y == 1], y_scores[Y == 0]
 
-            outlier_hist, bin = np.histogram(outlier_subspaces, BIN_NUM, range=(0, len(model_outputs)))
+            outlier_hist, bin = np.histogram(outlier_subspaces, BIN_NUM, range=(0.1, len(model_outputs)))
             bin = [f"{i / len(model_outputs):.1f}" for i in bin]
+            zero_subspaces_outlier = sum([1 for i in outlier_subspaces if i == 0])
 
-            inlier_hist = np.histogram(inlier_subspaces, BIN_NUM, range=(0, len(model_outputs)))[0]
+            inlier_hist = np.histogram(inlier_subspaces, BIN_NUM, range=(0.1, len(model_outputs)))[0]
+            zero_subspaces_inlier = sum([1 for i in inlier_subspaces if i == 0])
 
             outlier_hist_percent = outlier_hist / outlier_num
             inlier_hist_percent = inlier_hist / inlier_num
@@ -209,8 +212,8 @@ def subspace_count_per_point():
             logger.info(f"Inlier dist density {inlier_hist_percent}")
 
             outputs[f"{name}_{threshold}"][dataset] = {
-                "outlier": outlier_hist_percent.tolist(),
-                "inlier": inlier_hist_percent.tolist(),
+                "outlier": [zero_subspaces_outlier, ] + outlier_hist_percent.tolist(),
+                "inlier": [zero_subspaces_inlier, ] + inlier_hist_percent.tolist(),
                 "bin": bin,
                 "outlier_mean": np.mean(outlier_subspaces),
                 "inlier_mean": np.mean(inlier_subspaces),
@@ -274,7 +277,7 @@ def plot_point_count_per_dim():
         file_name = f"point_count_per_dim_{aggregator}_{threshold}.pdf"
         pp = PdfPages(file_name)
 
-        for dataset, data in obj.items():
+        for dataset, data in data_rst.items():
             f, ax = plt.subplots(1)
             x_locs = np.arange(len(data["feature_index"]))
             width = 0.5
@@ -291,8 +294,9 @@ def plot_point_count_per_dim():
             plt.savefig(pp, format='pdf', bbox_inches="tight")
 
         pp.close()
+        plt.close("all")
         logger.info(f"File name {file_name}")
 
 
 if __name__ == '__main__':
-    point_count_per_dim()
+    plot_point_count_per_dim()
