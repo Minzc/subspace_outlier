@@ -124,7 +124,8 @@ class GKE_GPU:
     def __init__(self, norm_method: str):
         self.norm_method = norm_method
 
-    def fit(self, data: np.array):
+    @staticmethod
+    def convert_to_tensor(data: np.array):
         stds = np.std(data, axis=0)
         stds[stds == 0] = 1
         n = np.math.pow(data.shape[0], 1.0/3)
@@ -132,6 +133,9 @@ class GKE_GPU:
 
         data = data / stds
         data = torch.tensor(data, dtype=torch.float64, device="cuda:0")
+        return data
+
+    def fit(self, data: torch.tensor):
         pairwise_distance = torch.cdist(data, data, 2)
         pairwise_distance = pairwise_distance * pairwise_distance * -1
         pairwise_distance = torch.exp(pairwise_distance)
@@ -179,8 +183,12 @@ def test():
         [5,6]
     ])
     mdl = GKE_GPU(None)
+    X = GKE_GPU.convert_to_tensor(X)
+    selected_features = np.array([0,1])
+    X = X[:, selected_features]
     score = mdl.fit(X)
     print(score)
+    print(score.tolist())
 
 
 if __name__ == '__main__':
