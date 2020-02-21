@@ -27,6 +27,8 @@ logger = getLogger(__name__)
 
 def compare_auc():
     outputs = defaultdict(dict)
+    # model = "knn"
+    model_name = "gke"
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
                     Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
@@ -36,10 +38,12 @@ def compare_auc():
         _X, Y = DataLoader.load(dataset)
         feature_index = np.array([i for i in range(_X.shape[1])])
 
-        X_gpu_tensor = _X
-        mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
-        # X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
-        # mdl = GKE_GPU(Normalize.ZSCORE)
+        if model_name == "knn":
+            X_gpu_tensor = _X
+            mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
+        elif model_name == "gke":
+            X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
+            mdl = GKE_GPU(Normalize.ZSCORE)
 
         model_outputs = []
         for l in range(1, len(feature_index) + 1):
@@ -67,7 +71,7 @@ def compare_auc():
                 "precision": precision
             }
 
-    output_file = f"performance.json"
+    output_file = f"{model_name}_performance.json"
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
@@ -139,7 +143,7 @@ def autolabel(ax, rects, digits=1):
                             xy=(rect.get_x() + rect.get_width() / 2, height),
                             xytext=(0, 3),  # 3 points vertical offset
                             textcoords="offset points",
-                            ha='center', va='bottom')
+                            ha='center', va='bottom', color='red')
             counter += 1
 
 
@@ -271,15 +275,16 @@ def plot_point_count_per_dim():
         pp = PdfPages(file_name)
 
         for dataset, data in data_rst.items():
-            f, ax = plt.subplots(1)
+            f, ax = plt.subplots(1, figsize=(4, 2))
             x_locs = np.arange(len(data["feature_index"]))
             width = 0.3
             bar1 = ax.bar(x_locs - width / 2, data["outlier"], width, label="Outlier")
             bar2 = ax.bar(x_locs + width / 2, data["inlier"], width, label="Inlier")
             ax.set_xticks(x_locs)
             ax.set_xticklabels([i + 1 for i in range(len(data["feature_index"]))])
-            ax.legend(loc=[0.005, 1.01])
-            ax.set_title(dataset)
+            ax.xaxis.set_tick_params(labelsize=10)
+            ax.legend(loc=[0.305, 1.01], ncol=2)
+            logger.info(dataset)
             ax.set_ylabel("Percentage of Points")
             ax.set_xlabel("Dimension of Outlying Subspaces")
             autolabel(ax, bar1, 2)
@@ -292,4 +297,4 @@ def plot_point_count_per_dim():
 
 
 if __name__ == '__main__':
-    compare_auc()
+    plot_subspace_count_per_point()
