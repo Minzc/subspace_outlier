@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from collections import defaultdict
 from itertools import combinations
-
+import time
 import numpy as np
 import matplotlib
 
@@ -18,7 +18,7 @@ from sklearn.metrics import roc_auc_score
 from sood.util import Normalize
 from sood.model.abs_model import Aggregator
 from sood.data_process.data_loader import DataLoader, Dataset
-from sood.model.base_detectors import kNN, GKE, kNN_GPU
+from sood.model.base_detectors import kNN, GKE_GPU
 from sood.log import getLogger
 
 logger = getLogger(__name__)
@@ -100,20 +100,15 @@ def compare_dim_dist():
         logger.info("=" * 50)
         logger.info(f"             Dataset {dataset}             ")
         logger.info("=" * 50)
-        X, Y = DataLoader.load(dataset)
-        stds = np.std(X, axis=0)
-        for idx, i in enumerate(stds):
-            if i == 0:
-                X[:, idx] = 0
-                stds[idx] = 1
-        X = X / stds
+        _X, Y = DataLoader.load(dataset)
+        feature_index = np.array([i for i in range(_X.shape[1])])
+        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
 
-        feature_index = np.array([i for i in range(X.shape[1])])
         outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
 
-        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-        mdl = kNN(neigh, Normalize.ZSCORE)
-        # mdl = GKE(Normalize.ZSCORE)
+        # neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+        # mdl = kNN(neigh, Normalize.ZSCORE)
+        mdl = GKE_GPU(Normalize.ZSCORE)
 
         subspace_dim_outlier_1, subspace_dim_inlier_1 = defaultdict(set), defaultdict(set)
         subspace_dim_outlier_2, subspace_dim_inlier_2 = defaultdict(set), defaultdict(set)
@@ -126,9 +121,10 @@ def compare_dim_dist():
         for l in range(1, len(feature_index) + 1):
             model_outputs = []
             for i in combinations(feature_index, l):
-                model_outputs.append(mdl.fit(X[:, np.asarray(i)]))
+                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
 
             for count_threshold in [1, 2]:
+                start_ts = time.time()
                 y_scores = np.array(Aggregator.count_std_threshold(model_outputs, count_threshold))
                 outlier_subspaces = y_scores[Y == 1]
                 inlier_subspaces = y_scores[Y == 0]
@@ -143,6 +139,8 @@ def compare_dim_dist():
                         subspace_dim_outlier_1[l].add(idx)
                     elif count_threshold == 2:
                         subspace_dim_outlier_2[l].add(idx)
+                logger.info(f"Time Elaps: {time.time() - start_ts}")
+
 
         for l, points in subspace_dim_outlier_1.items():
             outlier_dim_hist_1[l - 1] = len(points) / outlier_num
@@ -203,7 +201,7 @@ def compare_hist_dist(count_threshold=None):
         feature_index = np.array([i for i in range(X.shape[1])])
         neigh = max(10, int(np.floor(0.03 * X.shape[0])))
         # mdl = kNN(neigh, Normalize.ZSCORE)
-        mdl = GKE(Normalize.ZSCORE)
+        mdl = GKE_GPU(Normalize.ZSCORE)
 
 
         model_outputs = []
@@ -311,28 +309,29 @@ def plot_dim_hist_dist():
     logger.info(f"File name {file_name}")
 
 if __name__ == '__main__':
-    import torch
-    @torch.jit.script
-    def my_cdist(x1, x2):
-        x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
-        x2_norm = x2.pow(2).sum(dim=-1, keepdim=True)
-        res = torch.addmm(x2_norm.transpose(-2, -1), x1, x2.transpose(-2, -1), alpha=-2).add_(x1_norm)
-        res = res.clamp_min_(1e-30)
-        print("1", res)
-        res = res * -1.0
-        print("2", res)
-        res = torch.exp(res)
-        print(res)
-        print(res)
-        return res
-    a = torch.tensor([[1,2], [3,4], [5,6]], dtype=torch.float64)
-    rst = my_cdist(a, a)
-    print(rst)
-    rst =  torch.cdist(a, a, 2)
-    print(rst)
-    rst = rst * rst * -1
-    print(rst)
-    rst = torch.exp(rst)
-    print(rst)
-    rst = torch.sum(rst, axis=1)
-    print(rst)
+    # import torch
+    # @torch.jit.script
+    # def my_cdist(x1, x2):
+    #     x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
+    #     x2_norm = x2.pow(2).sum(dim=-1, keepdim=True)
+    #     res = torch.addmm(x2_norm.transpose(-2, -1), x1, x2.transpose(-2, -1), alpha=-2).add_(x1_norm)
+    #     res = res.clamp_min_(1e-30)
+    #     print("1", res)
+    #     res = res * -1.0
+    #     print("2", res)
+    #     res = torch.exp(res)
+    #     print(res)
+    #     print(res)
+    #     return res
+    # a = torch.tensor([[1,2], [3,4], [5,6]], dtype=torch.float64)
+    # rst = my_cdist(a, a)
+    # print(rst)
+    # rst =  torch.cdist(a, a, 2)
+    # print(rst)
+    # rst = rst * rst * -1
+    # print(rst)
+    # rst = torch.exp(rst)
+    # print(rst)
+    # rst = torch.sum(rst, axis=1)
+    # print(rst)
+    compare_dim_dist()
