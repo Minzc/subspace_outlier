@@ -10,6 +10,7 @@ import time
 import numpy as np
 import matplotlib
 import json
+
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -69,72 +70,6 @@ def compare_auc():
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
-
-
-
-    threshold = 0
-    for dataset in [Dataset.VOWELS, Dataset.WINE,
-                    Dataset.BREASTW, Dataset.VERTEBRAL, Dataset.ANNTHYROID,
-                    Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
-        logger.info("=" * 50)
-        logger.info(f"             Dataset {dataset}             ")
-        logger.info("=" * 50)
-        X, Y = DataLoader.load(dataset)
-
-        model_outputs = []
-        total_feature = X.shape[1]
-        feature_index = np.array([i for i in range(total_feature)])
-
-        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-        mdl = kNN(neigh, Normalize.ZSCORE)
-        # mdl = kNN_GPU(neigh, Normalize.ZSCORE)
-        # mdl = GKE(Normalize.ZSCORE)
-
-        for l in range(1, len(feature_index) + 1):
-            for i in combinations(feature_index, l):
-                selected_features = np.asarray(i)
-                _X = X[:, selected_features]
-                y_scores = mdl.fit(_X)
-                local_roc = roc_auc_score(Y, y_scores)
-                if local_roc > threshold:
-                    model_outputs.append(y_scores)
-
-        logger.info(f"Total model {len(model_outputs)}")
-        if len(model_outputs) > 0:
-            count_threshold = 0.05
-            score = Aggregator.count_rank_threshold(model_outputs, count_threshold)
-            y_scores = np.array(score)
-            roc = roc_auc_score(Y, y_scores)
-            precision = precision_n_scores(Y, y_scores)
-            outlier_subspaces = y_scores[Y == 1]
-            inlier_subspaces = y_scores[Y == 0]
-            logger.info(f"Outliers: {outlier_subspaces.shape}")
-            logger.info(f"Inliers: {inlier_subspaces.shape}")
-            logger.info(
-                f"Outlier Subspaces Min: {np.min(outlier_subspaces)} Max: {np.max(outlier_subspaces)} Mean: {np.mean(outlier_subspaces)}")
-            logger.info(
-                f"Inlier Subspaces Min: {np.min(inlier_subspaces)} Max: {np.max(inlier_subspaces)} Mean: {np.mean(inlier_subspaces)}")
-            logger.info(f"ROC of Count top-{count_threshold} {roc} Precision {precision}")
-
-            count_threshold = 2
-            score = Aggregator.count_std_threshold(model_outputs, count_threshold)
-            y_scores = np.array(score)
-            roc = roc_auc_score(Y, y_scores)
-            precision = precision_n_scores(Y, y_scores)
-            logger.info(f"ROC of Count {count_threshold}-std {roc} Precision {precision}")
-
-            score = Aggregator.average(model_outputs)
-            y_scores = np.array(score)
-            roc = roc_auc_score(Y, y_scores)
-            precision = precision_n_scores(Y, y_scores)
-            logger.info(f"ROC of Average {roc} Precision {precision}")
-
-            average_threshold = 2
-            score = Aggregator.average_threshold(model_outputs, average_threshold)
-            y_scores = np.array(score)
-            roc = roc_auc_score(Y, y_scores)
-            precision = precision_n_scores(Y, y_scores)
-            logger.info(f"ROC of Average {average_threshold}-std {roc} Precision {precision}")
 
 
 def point_count_per_dim():
