@@ -92,7 +92,7 @@ def compare_auc():
 
 def compare_dim_dist():
     import json
-    outputs = {}
+    outputs = defaultdict(dict)
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
                     Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
@@ -106,7 +106,6 @@ def compare_dim_dist():
 
         mdl = GKE_GPU(Normalize.ZSCORE)
 
-
         model_outputs_all = defaultdict(list)
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
@@ -115,35 +114,32 @@ def compare_dim_dist():
         assert len(model_outputs_all) == len(feature_index)
 
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
-                                      ("RANK", Aggregator.count_rank_threshold, 0.10),
-                                      ("STD", Aggregator.count_std_threshold, 1),
-                                      ("STD", Aggregator.count_std_threshold, 2)]:
+                                            ("RANK", Aggregator.count_rank_threshold, 0.10),
+                                            ("STD", Aggregator.count_std_threshold, 1),
+                                            ("STD", Aggregator.count_std_threshold, 2)]:
             dim_outlier_ratio = [0] * len(feature_index)
             dim_inlier_ratio = [0] * len(feature_index)
 
             for l, model_outputs in model_outputs_all.items():
                 y_scores = np.array(aggregator(model_outputs, threshold))
-                outlier_subspaces = y_scores[Y == 1]
-                inlier_subspaces = y_scores[Y == 0]
 
-                dim_outlier_idx = set()
-                for idx, score in enumerate(outlier_subspaces):
+                point_idx = set()
+                for idx, score in enumerate(y_scores[Y == 1]):
                     if score > 0:
-                        dim_outlier_idx.add(idx)
-                dim_outlier_ratio[l - 1] = len(dim_outlier_idx) / outlier_num
+                        point_idx.add(idx)
+                dim_outlier_ratio[l - 1] = len(point_idx) / outlier_num
 
-                dim_inlier_idx = set()
-                for idx, score in enumerate(inlier_subspaces):
+                point_idx = set()
+                for idx, score in enumerate(y_scores[Y == 0]):
                     if score > 0:
-                        dim_inlier_idx.add(idx)
-                dim_inlier_ratio[l - 1] = len(dim_inlier_idx) / inlier_num
-            outputs[f"{name}_{threshold}_outlier"] = dim_outlier_ratio
-            outputs[f"{name}_{threshold}_inlier"] = dim_inlier_ratio
+                        point_idx.add(idx)
+                dim_inlier_ratio[l - 1] = len(point_idx) / inlier_num
+
+            outputs[dataset][f"{name}_{threshold}_outlier"] = dim_outlier_ratio
+            outputs[dataset][f"{name}_{threshold}_inlier"] = dim_inlier_ratio
 
     with open(f"outlying_subspace_dist.json", "w") as w:
         w.write(f"{json.dumps(outputs)}")
-
-
 
 
 def autolabel(ax, rects, digits=1):
@@ -159,7 +155,6 @@ def autolabel(ax, rects, digits=1):
                             textcoords="offset points",
                             ha='center', va='bottom')
             counter += 1
-
 
 
 def compare_hist_dist(count_threshold=None):
@@ -182,7 +177,6 @@ def compare_hist_dist(count_threshold=None):
         # mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
         mdl = GKE_GPU(Normalize.ZSCORE)
         X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
-
 
         model_outputs = []
         for l in range(1, len(feature_index) + 1):
@@ -223,7 +217,6 @@ def compare_hist_dist(count_threshold=None):
                 "inlier_median": np.median(inlier_subspaces),
             }
 
-
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
 
@@ -256,9 +249,11 @@ def plot_compare_hist_dist():
         autolabel(ax, bar1)
         autolabel(ax, bar2)
         plt.savefig(pp, format='pdf', bbox_inches="tight")
-        print(f"{dataset} & {data['outlier_mean']:.0f} & {data['inlier_mean']:.0f} & {data['outlier_median']:.0f} & {data['inlier_median']:.0f} \\\\ \hline")
+        print(
+            f"{dataset} & {data['outlier_mean']:.0f} & {data['inlier_mean']:.0f} & {data['outlier_median']:.0f} & {data['inlier_median']:.0f} \\\\ \hline")
     pp.close()
     logger.info(f"File name {file_name}")
+
 
 def plot_dim_hist_dist():
     import json
@@ -287,6 +282,7 @@ def plot_dim_hist_dist():
 
     pp.close()
     logger.info(f"File name {file_name}")
+
 
 if __name__ == '__main__':
     # import torch
