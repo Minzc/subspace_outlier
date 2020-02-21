@@ -35,9 +35,9 @@ def experiment(model, dim_boundary, threshold):
 
     threshold = float(threshold)
 
-    for dataset in [Dataset.AD, Dataset.AID362, Dataset.BANK, Dataset.PROB, Dataset.U2R]:
-        for aggregator in [Aggregator.AVERAGE, Aggregator.AVERAGE_THRESHOLD, Aggregator.COUNT_STD_THRESHOLD,
-                           Aggregator.COUNT_RANK_THRESHOLD]:
+    for dataset in [Dataset.OPTDIGITS, Dataset.MNIST_ODDS, Dataset.MUSK, Dataset.ARRHYTHMIA,
+                    Dataset.AD, Dataset.AID362, Dataset.BANK, Dataset.PROB, Dataset.U2R]:
+        for aggregator in [ Aggregator.COUNT_RANK_THRESHOLD, ]:
             for base_model in [kNN.NAME, ]:
                 X, Y = DataLoader.load(dataset)
                 dim = X.shape[1]
