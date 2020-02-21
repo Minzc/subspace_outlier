@@ -137,7 +137,7 @@ class GKE_GPU:
 
     def fit(self, data: torch.tensor):
         pairwise_distance = torch.cdist(data, data, 2)
-        pairwise_distance = pairwise_distance * pairwise_distance * -1
+        pairwise_distance = pairwise_distance * pairwise_distance * -0.5
         pairwise_distance = torch.exp(pairwise_distance)
         pairwise_distance = torch.sum(pairwise_distance, axis=1)
         score = -pairwise_distance
@@ -184,13 +184,30 @@ def test():
         [5,6]
     ])
     mdl = GKE_GPU(None)
-    X = GKE_GPU.convert_to_tensor(X)
+    # X = GKE_GPU.convert_to_tensor(X)
     selected_features = np.array([0,1])
+    X = torch.tensor(X)
     X = X[:, selected_features]
+    print(X)
     score = mdl.fit(X)
     print(score)
     print(score.numpy())
     print(score.tolist())
+    for i in X:
+        total = 0
+        for j in X:
+            i_j = i - j
+            print("i - j", i_j)
+            i_j = i_j * i_j
+            print("(i - j)^2", i_j)
+            i_j = i_j / 2
+            print("(i - j)^2/2", i_j)
+            i_j = torch.sum(i_j)
+            print("sum[(i - j)^2/2]", i_j)
+            e_i_j = torch.exp(-i_j)
+            print("e^{sum[(i - j)^2/2]}", i_j)
+            total += e_i_j
+        print(total, i)
 
 
 if __name__ == '__main__':
