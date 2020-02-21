@@ -194,9 +194,17 @@ def subspace_count_per_point():
             outlier_hist, bin = np.histogram(outlier_subspaces, BIN_NUM, range=(0.1, len(model_outputs)))
             bin = [f"{i / len(model_outputs):.1f}" for i in bin]
             zero_subspaces_outlier = sum([1 for i in outlier_subspaces if i == 0])
+            print(zero_subspaces_outlier)
+            print(outlier_hist)
+            np.insert(outlier_hist, 0, zero_subspaces_outlier)
+            print(outlier_hist)
 
             inlier_hist = np.histogram(inlier_subspaces, BIN_NUM, range=(0.1, len(model_outputs)))[0]
             zero_subspaces_inlier = sum([1 for i in inlier_subspaces if i == 0])
+            print(zero_subspaces_inlier)
+            print(inlier_hist)
+            np.insert(inlier_hist, 0, zero_subspaces_inlier)
+            print(inlier_hist)
 
             outlier_hist_percent = outlier_hist / outlier_num
             inlier_hist_percent = inlier_hist / inlier_num
