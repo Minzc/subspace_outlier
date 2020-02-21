@@ -157,14 +157,12 @@ def autolabel(ax, rects, digits=1):
             counter += 1
 
 
-def compare_hist_dist(count_threshold=None):
+def compare_hist_dist():
     import json
-    threshold = 0
     BIN_NUM = 10
-    outputs = {}
-    if count_threshold is None:
-        count_threshold = 2
-    output_file = f"compare_hist_dist_std_{count_threshold}.json"
+    outputs = defaultdict(dict)
+
+    output_file = f"compare_subspace_count.json"
 
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
@@ -173,27 +171,30 @@ def compare_hist_dist(count_threshold=None):
         logger.info(f"             Dataset {dataset}             ")
         logger.info("=" * 50)
         _X, Y = DataLoader.load(dataset)
+        outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
         feature_index = np.array([i for i in range(_X.shape[1])])
+        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
         # mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
         mdl = GKE_GPU(Normalize.ZSCORE)
-        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
 
         model_outputs = []
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
-                score = mdl.fit(X_gpu_tensor[:, np.asarray(i)])
-                if roc_auc_score(Y, np.array(Aggregator.average([score, ]))) > threshold:
-                    model_outputs.append(score)
+                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
 
         logger.info(f"Total model {len(model_outputs)}")
-        if len(model_outputs) > 0:
-            y_scores = np.array(Aggregator.count_std_threshold(model_outputs, count_threshold))
-            outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
+        for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
+                                            ("RANK", Aggregator.count_rank_threshold, 0.10),
+                                            ("STD", Aggregator.count_std_threshold, 1),
+                                            ("STD", Aggregator.count_std_threshold, 2)]:
+            y_scores = np.array(aggregator(model_outputs, threshold))
             outlier_subspaces, inlier_subspaces = y_scores[Y == 1], y_scores[Y == 0]
 
             outlier_hist, bin = np.histogram(outlier_subspaces, BIN_NUM, range=(0, len(model_outputs)))
             bin = [f"{i / len(model_outputs):.1f}" for i in bin]
+
             inlier_hist = np.histogram(inlier_subspaces, BIN_NUM, range=(0, len(model_outputs)))[0]
+
             outlier_hist_percent = outlier_hist / outlier_num
             inlier_hist_percent = inlier_hist / inlier_num
 
@@ -207,7 +208,7 @@ def compare_hist_dist(count_threshold=None):
             logger.info(f"Outlier dist density {outlier_hist_percent}")
             logger.info(f"Inlier dist density {inlier_hist_percent}")
 
-            outputs[dataset] = {
+            outputs[dataset][f"{name}_{threshold}"] = {
                 "outlier": outlier_hist_percent.tolist(),
                 "inlier": inlier_hist_percent.tolist(),
                 "bin": bin,
