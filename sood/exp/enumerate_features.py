@@ -90,7 +90,7 @@ def compare_auc():
             logger.info(f"ROC of Average {average_threshold}-std {roc} Precision {precision}")
 
 
-def compare_dim_dist():
+def point_count_per_dim():
     import json
     outputs = defaultdict(dict)
     for dataset in [Dataset.VOWELS, Dataset.WINE,
@@ -135,10 +135,10 @@ def compare_dim_dist():
                         point_idx.add(idx)
                 dim_inlier_ratio[l - 1] = len(point_idx) / inlier_num
 
-            outputs[dataset][f"{name}_{threshold}_outlier"] = dim_outlier_ratio
-            outputs[dataset][f"{name}_{threshold}_inlier"] = dim_inlier_ratio
+            outputs[f"{name}_{threshold}_outlier"][dataset] = dim_outlier_ratio
+            outputs[f"{name}_{threshold}_inlier"][dataset] = dim_inlier_ratio
 
-    with open(f"outlying_subspace_dist.json", "w") as w:
+    with open(f"point_count_per_dim.json", "w") as w:
         w.write(f"{json.dumps(outputs)}")
 
 
@@ -206,7 +206,7 @@ def subspace_count_per_point():
             logger.info(f"Outlier dist density {outlier_hist_percent}")
             logger.info(f"Inlier dist density {inlier_hist_percent}")
 
-            outputs[dataset][f"{name}_{threshold}"] = {
+            outputs[f"{name}_{threshold}"][dataset] = {
                 "outlier": outlier_hist_percent.tolist(),
                 "inlier": inlier_hist_percent.tolist(),
                 "bin": bin,
@@ -222,38 +222,40 @@ def subspace_count_per_point():
     logger.info(f"Output file {output_file}")
 
 
-def plot_compare_hist_dist():
+def plot_subspace_count_per_point():
     import json
-    count_threshold = 2
-    file_name = f"compare_hist_dist_std_{count_threshold}.pdf"
-    pp = PdfPages(file_name)
-    with open(f"compare_hist_dist_std_{count_threshold}.json") as f:
-        ln = f.readlines()[0]
-        obj = json.loads(ln)
+    input_file = f"subspace_count_per_point.json"
     BIN_NUM = 10
-    for dataset, data in obj.items():
-        f, ax = plt.subplots(1, figsize=(4, 2))
-        x_locs = np.arange(BIN_NUM)
-        width = 0.5
+    with open(input_file) as f:
+        obj = json.loads(f.readlines()[0])
+    for aggregate_threshold, data_rst in obj.items():
+        aggregator, threshold = aggregate_threshold.split("_")
+        file_name = f"subspace_count_per_point_{aggregator}_{threshold}.pdf"
+        pp = PdfPages(file_name)
+        print(aggregator)
+        for dataset, data in data_rst.items():
+            f, ax = plt.subplots(1, figsize=(4, 2))
+            x_locs = np.arange(BIN_NUM)
+            width = 0.5
 
-        outlier_hist_percent = data["outlier"]
-        inlier_hist_percent = data["inlier"]
+            outlier_hist_percent = data["outlier"]
+            inlier_hist_percent = data["inlier"]
 
-        bar1 = ax.bar(x_locs - width / 2, outlier_hist_percent, width, label="Outlier")
-        bar2 = ax.bar(x_locs + width / 2, inlier_hist_percent, width, label="Inlier")
-        ax.set_xticks(x_locs)
-        ax.set_xticklabels(data["bin"])
-        ax.legend()
-        ax.xaxis.set_tick_params(labelsize=10)
-        ax.set_ylabel("Percentage of Points")
-        ax.set_xlabel("Ratio of Outlying Subspaces")
-        autolabel(ax, bar1)
-        autolabel(ax, bar2)
-        plt.savefig(pp, format='pdf', bbox_inches="tight")
-        print(
-            f"{dataset} & {data['outlier_mean']:.0f} & {data['inlier_mean']:.0f} & {data['outlier_median']:.0f} & {data['inlier_median']:.0f} \\\\ \hline")
-    pp.close()
-    logger.info(f"File name {file_name}")
+            bar1 = ax.bar(x_locs - width / 2, outlier_hist_percent, width, label="Outlier")
+            bar2 = ax.bar(x_locs + width / 2, inlier_hist_percent, width, label="Inlier")
+            ax.set_xticks(x_locs)
+            ax.set_xticklabels(data["bin"])
+            ax.legend()
+            ax.xaxis.set_tick_params(labelsize=10)
+            ax.set_ylabel("Percentage of Points")
+            ax.set_xlabel("Ratio of Outlying Subspaces")
+            autolabel(ax, bar1)
+            autolabel(ax, bar2)
+            plt.savefig(pp, format='pdf', bbox_inches="tight")
+            print(
+                f"{dataset} & {data['outlier_mean']:.0f} & {data['inlier_mean']:.0f} & {data['outlier_median']:.0f} & {data['inlier_median']:.0f} \\\\ \hline")
+        pp.close()
+        logger.info(f"File name {file_name}")
 
 
 def plot_dim_hist_dist():
@@ -286,29 +288,5 @@ def plot_dim_hist_dist():
 
 
 if __name__ == '__main__':
-    # import torch
-    # @torch.jit.script
-    # def my_cdist(x1, x2):
-    #     x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
-    #     x2_norm = x2.pow(2).sum(dim=-1, keepdim=True)
-    #     res = torch.addmm(x2_norm.transpose(-2, -1), x1, x2.transpose(-2, -1), alpha=-2).add_(x1_norm)
-    #     res = res.clamp_min_(1e-30)
-    #     print("1", res)
-    #     res = res * -1.0
-    #     print("2", res)
-    #     res = torch.exp(res)
-    #     print(res)
-    #     print(res)
-    #     return res
-    # a = torch.tensor([[1,2], [3,4], [5,6]], dtype=torch.float64)
-    # rst = my_cdist(a, a)
-    # print(rst)
-    # rst =  torch.cdist(a, a, 2)
-    # print(rst)
-    # rst = rst * rst * -1
-    # print(rst)
-    # rst = torch.exp(rst)
-    # print(rst)
-    # rst = torch.sum(rst, axis=1)
-    # print(rst)
+    point_count_per_dim()
     subspace_count_per_point()
