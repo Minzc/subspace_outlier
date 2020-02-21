@@ -143,6 +143,32 @@ class GKE:
         else:
             return score
 
+class GKE_EST:
+    NAME = "GKE"
+
+    def __init__(self, norm_method: str, neighbor):
+        self.norm_method = norm_method
+
+    def fit(self, data: np.array):
+        stds = np.std(data, axis=0)
+        for idx, i in enumerate(stds):
+            if i == 0:
+                data[:, idx] = 0
+                stds[idx] = 1
+        data = data / stds
+        def compute(u, v):
+            return ((u - v) ** 2).sum()
+        pairwise_distance = cdist(data, data, compute)
+        pairwise_distance = np.exp(-pairwise_distance)
+        pairwise_distance = np.sum(pairwise_distance, axis=1)
+        score = -pairwise_distance
+        if self.norm_method == Normalize.ZSCORE:
+            return Normalize.zscore(score)
+        elif self.norm_method == Normalize.UNIFY:
+            return Normalize.unify(score)
+        else:
+            return score
+
 def test():
     X = np.array([
         [1,2],
