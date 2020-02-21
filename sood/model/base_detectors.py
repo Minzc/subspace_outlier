@@ -141,6 +141,7 @@ class GKE_GPU:
         pairwise_distance = torch.exp(pairwise_distance)
         pairwise_distance = torch.sum(pairwise_distance, axis=1)
         score = -pairwise_distance
+        score = score.cpu().numpy()
 
         if self.norm_method == Normalize.ZSCORE:
             return Normalize.zscore(score)
@@ -188,6 +189,7 @@ def test():
     X = X[:, selected_features]
     score = mdl.fit(X)
     print(score)
+    print(score.numpy())
     print(score.tolist())
 
 
