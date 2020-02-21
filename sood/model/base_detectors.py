@@ -144,15 +144,13 @@ class GKE:
             return score
 
 def test():
-    X, Y = DataLoader.load(Dataset.GLASS)
-    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    knn = kNN(neigh, norm_method=None)
-    rst = knn.fit(X)
-    print(rst[:20])
-
-    knn = kNN_GPU(neigh, norm_method=None)
-    rst = knn.fit(X)
-    print(rst[:20])
+    X = np.array([
+        [1,2],
+        [4,5],
+        [7,8]
+    ])
+    mdl = GKE(None)
+    mdl.fit(X)
 
 
 if __name__ == '__main__':
