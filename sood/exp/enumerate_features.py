@@ -34,11 +34,12 @@ def compare_auc():
         logger.info(f"             Dataset {dataset}             ")
         logger.info("=" * 50)
         _X, Y = DataLoader.load(dataset)
-        outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
         feature_index = np.array([i for i in range(_X.shape[1])])
-        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
-        # mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
-        mdl = GKE_GPU(Normalize.ZSCORE)
+
+        X_gpu_tensor = _X
+        mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
+        # X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
+        # mdl = GKE_GPU(Normalize.ZSCORE)
 
         model_outputs = []
         for l in range(1, len(feature_index) + 1):
