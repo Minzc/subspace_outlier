@@ -135,8 +135,10 @@ def point_count_per_dim():
                         point_idx.add(idx)
                 dim_inlier_ratio[l - 1] = len(point_idx) / inlier_num
 
-            outputs[f"{name}_{threshold}_outlier"][dataset] = dim_outlier_ratio
-            outputs[f"{name}_{threshold}_inlier"][dataset] = dim_inlier_ratio
+            outputs[f"{name}_{threshold}"][dataset] = {
+                "outlier": dim_outlier_ratio,
+                "inlier": dim_inlier_ratio
+            }
 
     with open(f"point_count_per_dim.json", "w") as w:
         w.write(f"{json.dumps(outputs)}")
@@ -232,7 +234,7 @@ def plot_subspace_count_per_point():
         aggregator, threshold = aggregate_threshold.split("_")
         file_name = f"subspace_count_per_point_{aggregator}_{threshold}.pdf"
         pp = PdfPages(file_name)
-        print(aggregator)
+        print(aggregator, threshold)
         for dataset, data in data_rst.items():
             f, ax = plt.subplots(1, figsize=(4, 2))
             x_locs = np.arange(BIN_NUM)
@@ -255,38 +257,42 @@ def plot_subspace_count_per_point():
             print(
                 f"{dataset} & {data['outlier_mean']:.0f} & {data['inlier_mean']:.0f} & {data['outlier_median']:.0f} & {data['inlier_median']:.0f} \\\\ \hline")
         pp.close()
+        plt.close("all")
         logger.info(f"File name {file_name}")
 
 
-def plot_dim_hist_dist():
+def plot_point_count_per_dim():
     import json
     count_threshold = 2
-    file_name = f"outlying_subspace_dist_std_{count_threshold}.pdf"
-    pp = PdfPages(file_name)
-    with open(f"outlying_subspace_dist_std_{count_threshold}.json") as f:
-        ln = f.readlines()[0]
-        obj = json.loads(ln)
+    input_file = f"point_count_per_dim.json"
+    with open(input_file) as f:
+        obj = json.loads(f.readlines()[0])
 
-    for dataset, data in obj.items():
-        f, ax = plt.subplots(1)
-        x_locs = np.arange(len(data["feature_index"]))
-        width = 0.5
-        bar1 = ax.bar(x_locs - width / 2, data["outlier"], width, label="Outlier")
-        bar2 = ax.bar(x_locs + width / 2, data["inlier"], width, label="Inlier")
-        ax.set_xticks(x_locs)
-        ax.set_xticklabels([i + 1 for i in range(len(data["feature_index"]))])
-        ax.legend(loc=[0.005, 1.01])
-        ax.set_title(dataset)
-        ax.set_ylabel("Percentage of Points")
-        ax.set_xlabel("Dimension of Outlying Subspaces")
-        autolabel(ax, bar1, 2)
-        autolabel(ax, bar2, 2)
-        plt.savefig(pp, format='pdf', bbox_inches="tight")
+    for aggregate_threshold, data_rst in obj.items():
+        print(aggregate_threshold)
+        aggregator, threshold = aggregate_threshold.split("_")
+        file_name = f"point_count_per_dim_{aggregator}_{threshold}.pdf"
+        pp = PdfPages(file_name)
 
-    pp.close()
-    logger.info(f"File name {file_name}")
+        for dataset, data in obj.items():
+            f, ax = plt.subplots(1)
+            x_locs = np.arange(len(data["feature_index"]))
+            width = 0.5
+            bar1 = ax.bar(x_locs - width / 2, data["outlier"], width, label="Outlier")
+            bar2 = ax.bar(x_locs + width / 2, data["inlier"], width, label="Inlier")
+            ax.set_xticks(x_locs)
+            ax.set_xticklabels([i + 1 for i in range(len(data["feature_index"]))])
+            ax.legend(loc=[0.005, 1.01])
+            ax.set_title(dataset)
+            ax.set_ylabel("Percentage of Points")
+            ax.set_xlabel("Dimension of Outlying Subspaces")
+            autolabel(ax, bar1, 2)
+            autolabel(ax, bar2, 2)
+            plt.savefig(pp, format='pdf', bbox_inches="tight")
+
+        pp.close()
+        logger.info(f"File name {file_name}")
 
 
 if __name__ == '__main__':
     point_count_per_dim()
-    subspace_count_per_point()
