@@ -92,7 +92,7 @@ def compare_auc():
 
 def compare_dim_dist():
     import json
-    outputs = {1:{}, 2:{}}
+    outputs = {}
     count_threshold = 1
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
@@ -106,8 +106,6 @@ def compare_dim_dist():
 
         outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
 
-        # neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-        # mdl = kNN(neigh, Normalize.ZSCORE)
         mdl = GKE_GPU(Normalize.ZSCORE)
 
         subspace_dim_outlier_1, subspace_dim_inlier_1 = defaultdict(set), defaultdict(set)
@@ -124,7 +122,6 @@ def compare_dim_dist():
                 model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
 
             for count_threshold in [1, 2]:
-                start_ts = time.time()
                 y_scores = np.array(Aggregator.count_std_threshold(model_outputs, count_threshold))
                 outlier_subspaces = y_scores[Y == 1]
                 inlier_subspaces = y_scores[Y == 0]
@@ -134,12 +131,13 @@ def compare_dim_dist():
                             subspace_dim_outlier_1[l].add(idx)
                         elif count_threshold == 2:
                             subspace_dim_outlier_2[l].add(idx)
+
                 for idx, score in enumerate(inlier_subspaces):
-                    if count_threshold == 1:
-                        subspace_dim_outlier_1[l].add(idx)
-                    elif count_threshold == 2:
-                        subspace_dim_outlier_2[l].add(idx)
-                logger.info(f"Time Elaps: {time.time() - start_ts}")
+                    if score > 0:
+                        if count_threshold == 1:
+                            subspace_dim_inlier_1[l].add(idx)
+                        elif count_threshold == 2:
+                            subspace_dim_inlier_2[l].add(idx)
 
 
         for l, points in subspace_dim_outlier_1.items():
@@ -197,17 +195,17 @@ def compare_hist_dist(count_threshold=None):
         logger.info("=" * 50)
         logger.info(f"             Dataset {dataset}             ")
         logger.info("=" * 50)
-        X, Y = DataLoader.load(dataset)
-        feature_index = np.array([i for i in range(X.shape[1])])
-        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-        # mdl = kNN(neigh, Normalize.ZSCORE)
+        _X, Y = DataLoader.load(dataset)
+        feature_index = np.array([i for i in range(_X.shape[1])])
+        # mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
         mdl = GKE_GPU(Normalize.ZSCORE)
+        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
 
 
         model_outputs = []
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
-                score = mdl.fit(X[:, np.asarray(i)])
+                score = mdl.fit(X_gpu_tensor[:, np.asarray(i)])
                 if roc_auc_score(Y, np.array(Aggregator.average([score, ]))) > threshold:
                     model_outputs.append(score)
 
