@@ -162,8 +162,6 @@ def subspace_count_per_point():
     BIN_NUM = 10
     outputs = defaultdict(dict)
 
-    output_file = f"compare_subspace_count.json"
-
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
                     Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
@@ -218,8 +216,10 @@ def subspace_count_per_point():
                 "inlier_median": np.median(inlier_subspaces),
             }
 
+    output_file = f"subspace_count_per_point.json"
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
+    logger.info(f"Output file {output_file}")
 
 
 def plot_compare_hist_dist():
