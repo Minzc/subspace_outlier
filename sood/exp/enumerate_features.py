@@ -80,6 +80,7 @@ def compare_auc():
 def point_count_per_dim():
     import json
     outputs = defaultdict(dict)
+    model = "knn"
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
                     Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
@@ -88,10 +89,15 @@ def point_count_per_dim():
         logger.info("=" * 50)
         _X, Y = DataLoader.load(dataset)
         feature_index = np.array([i for i in range(_X.shape[1])])
-        X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
         outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
 
-        mdl = GKE_GPU(Normalize.ZSCORE)
+        if model == "knn":
+            mdl = GKE_GPU(Normalize.ZSCORE)
+            X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
+        else:
+            mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
+            X_gpu_tensor = _X
+
 
         model_outputs_all = defaultdict(list)
         for l in range(1, len(feature_index) + 1):
@@ -128,7 +134,7 @@ def point_count_per_dim():
                 "feature_index": feature_index.tolist()
             }
 
-    with open(f"point_count_per_dim.json", "w") as w:
+    with open(f"{model}_point_count_per_dim.json", "w") as w:
         w.write(f"{json.dumps(outputs)}")
 
 
@@ -230,13 +236,14 @@ def subspace_count_per_point():
 
 def plot_subspace_count_per_point():
     import json
-    input_file = f"subspace_count_per_point.json"
+    model = "knn"
+    input_file = f"{model}_subspace_count_per_point.json"
     BIN_NUM = 10
     with open(input_file) as f:
         obj = json.loads(f.readlines()[0])
     for aggregate_threshold, data_rst in obj.items():
         aggregator, threshold = aggregate_threshold.split("_")
-        file_name = f"subspace_count_per_point_{aggregator}_{threshold}.pdf"
+        file_name = f"{model}_subspace_count_per_point_{aggregator}_{threshold}.pdf"
         pp = PdfPages(file_name)
         print(aggregator, threshold)
         for dataset, data in data_rst.items():
@@ -301,4 +308,4 @@ def plot_point_count_per_dim():
 
 
 if __name__ == '__main__':
-    subspace_count_per_point()
+    point_count_per_dim()
