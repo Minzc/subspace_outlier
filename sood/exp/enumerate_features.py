@@ -301,4 +301,4 @@ def plot_point_count_per_dim():
 
 
 if __name__ == '__main__':
-    plot_subspace_count_per_point()
+    subspace_count_per_point()
