@@ -76,6 +76,7 @@ def compare_auc():
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
 
+
 def outliers_per_subspace():
     import json
     outputs = defaultdict(dict)
@@ -117,12 +118,10 @@ def outliers_per_subspace():
                 "subspace_total": len(model_outputs)
             }
 
-
     output_file = f"{model}_outliers_per_subspace.json"
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
-
 
 
 def point_count_per_dim():
@@ -145,7 +144,6 @@ def point_count_per_dim():
         else:
             mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
             X_gpu_tensor = _X
-
 
         model_outputs_all = defaultdict(list)
         for l in range(1, len(feature_index) + 1):
@@ -354,9 +352,10 @@ def plot_point_count_per_dim():
         plt.close("all")
         logger.info(f"File name {file_name}")
 
+
 def plot_outlier_per_subspace_hist():
     import json
-    model = "knn"
+    model = "gke"
     input_file = f"{model}_outliers_per_subspace.json"
     BIN_NUM = 10
     with open(input_file) as f:
@@ -368,7 +367,8 @@ def plot_outlier_per_subspace_hist():
         pp = PdfPages(file_name)
 
         for dataset, data in data_rst.items():
-            outlier_hist, bin = np.histogram(np.array(data["outlier_dist"]), BIN_NUM, range=(0.1, data["outlier_total"]))
+            outlier_hist, bin = np.histogram(np.array(data["outlier_dist"]), BIN_NUM,
+                                             range=(0.1, data["outlier_total"]))
             zero_outlier_subspaces = sum([1 for i in data["outlier_dist"] if i == 0])
             outlier_hist = np.insert(outlier_hist, 0, zero_outlier_subspaces)
             outlier_hist = outlier_hist / data["subspace_total"]
@@ -379,13 +379,13 @@ def plot_outlier_per_subspace_hist():
             width = 0.3
             bar = ax.bar(x_locs, outlier_hist, width)
             ax.set_xticks(x_locs)
-            ax.set_xticklabels([i/10 for i in range(11)])
+            ax.set_xticklabels([i / 10 for i in range(11)])
             ax.xaxis.set_tick_params(labelsize=10)
             # ax.legend(loc=[0.305, 1.01], ncol=2)
             logger.info(dataset)
             ax.set_ylabel("Subspaces Percentage")
             ax.set_xlabel("(Outliers in a subspace)/(Total Outliers)")
-            ax.set_title()
+            # ax.set_title()
             autolabel(ax, bar, 2)
             plt.savefig(pp, format='pdf', bbox_inches="tight")
 
@@ -393,6 +393,7 @@ def plot_outlier_per_subspace_hist():
         plt.close("all")
         logger.info(f"File name {file_name}")
 
+
 if __name__ == '__main__':
-    # plot_outlier_per_subspace_hist()
-    outliers_per_subspace()
+    plot_outlier_per_subspace_hist()
+    # outliers_per_subspace()
