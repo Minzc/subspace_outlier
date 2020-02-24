@@ -19,7 +19,7 @@ from sklearn.metrics import roc_auc_score
 from sood.util import Normalize
 from sood.model.abs_model import Aggregator
 from sood.data_process.data_loader import DataLoader, Dataset
-from sood.model.base_detectors import kNN#, GKE_GPU
+from sood.model.base_detectors import kNN, GKE_GPU
 from sood.log import getLogger
 
 logger = getLogger(__name__)
@@ -79,7 +79,7 @@ def compare_auc():
 def outliers_per_subspace():
     import json
     outputs = defaultdict(dict)
-    model = 'knn'
+    model = 'gke'
 
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
@@ -394,5 +394,5 @@ def plot_outlier_per_subspace_hist():
         logger.info(f"File name {file_name}")
 
 if __name__ == '__main__':
-    plot_outlier_per_subspace_hist()
-    # outliers_per_subspace()
+    # plot_outlier_per_subspace_hist()
+    outliers_per_subspace()
