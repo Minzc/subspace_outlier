@@ -19,7 +19,7 @@ from sklearn.metrics import roc_auc_score
 from sood.util import Normalize
 from sood.model.abs_model import Aggregator
 from sood.data_process.data_loader import DataLoader, Dataset
-from sood.model.base_detectors import kNN, GKE_GPU
+from sood.model.base_detectors import kNN#, GKE_GPU
 from sood.log import getLogger
 
 logger = getLogger(__name__)
@@ -75,6 +75,54 @@ def compare_auc():
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
+
+def outliers_per_subspace():
+    import json
+    outputs = defaultdict(dict)
+    model = 'knn'
+
+    for dataset in [Dataset.VOWELS, Dataset.WINE,
+                    Dataset.BREASTW, Dataset.ANNTHYROID,
+                    Dataset.GLASS, Dataset.PIMA, Dataset.THYROID]:
+        logger.info("=" * 50)
+        logger.info(f"             Dataset {dataset}             ")
+        logger.info("=" * 50)
+        _X, Y = DataLoader.load(dataset)
+        outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
+        feature_index = np.array([i for i in range(_X.shape[1])])
+        if model == "knn":
+            mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
+            X_gpu_tensor = _X
+        elif model == "gke":
+            mdl = GKE_GPU(Normalize.ZSCORE)
+            X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
+
+        model_outputs = []
+        for l in range(1, len(feature_index) + 1):
+            for i in combinations(feature_index, l):
+                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
+
+        logger.info(f"Total model {len(model_outputs)}")
+        for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
+                                            ("RANK", Aggregator.count_rank_threshold, 0.10),
+                                            ("STD", Aggregator.count_std_threshold, 1),
+                                            ("STD", Aggregator.count_std_threshold, 2)]:
+            outlier_num_per_subspace = []
+            for i in model_outputs:
+                y_scores = np.array(aggregator([i, ], threshold))
+                outlier_num_per_subspace.append(int(np.sum(y_scores[Y == 1])))
+            outputs[f"{name}_{threshold}"][dataset] = {
+                "outlier_dist": outlier_num_per_subspace,
+                "outlier_total": int(outlier_num),
+                "subspace_total": len(model_outputs)
+            }
+
+
+    output_file = f"{model}_outliers_per_subspace.json"
+    with open(output_file, "w") as w:
+        w.write(f"{json.dumps(outputs)}\n")
+    logger.info(f"Output file {output_file}")
+
 
 
 def point_count_per_dim():
@@ -141,16 +189,16 @@ def point_count_per_dim():
 def autolabel(ax, rects, digits=1):
     """Attach a text label above each bar in *rects*, displaying its height."""
     counter = 0
+    max_height = max([rect.get_height() for rect in rects])
     for rect in rects:
+        counter += 1
         height = rect.get_height()
-        if counter == 0:
-            if height > 0.1:
-                ax.annotate(f'{height:.3f}',
-                            xy=(rect.get_x() + rect.get_width() / 2, height),
-                            xytext=(0, 3),  # 3 points vertical offset
-                            textcoords="offset points",
-                            ha='center', va='bottom', color='red')
-            counter += 1
+        if height == max_height or counter == len(rects):
+            ax.annotate(f'{height:.3f}',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom', color='red')
 
 
 def subspace_count_per_point():
@@ -306,6 +354,45 @@ def plot_point_count_per_dim():
         plt.close("all")
         logger.info(f"File name {file_name}")
 
+def plot_outlier_per_subspace_hist():
+    import json
+    model = "knn"
+    input_file = f"{model}_outliers_per_subspace.json"
+    BIN_NUM = 10
+    with open(input_file) as f:
+        obj = json.loads(f.readlines()[0])
+
+    for aggregate_threshold, data_rst in obj.items():
+        aggregator, threshold = aggregate_threshold.split("_")
+        file_name = f"{model}_outlier_count_per_subspace_{aggregator}_{threshold}.pdf"
+        pp = PdfPages(file_name)
+
+        for dataset, data in data_rst.items():
+            outlier_hist, bin = np.histogram(np.array(data["outlier_dist"]), BIN_NUM, range=(0.1, data["outlier_total"]))
+            zero_outlier_subspaces = sum([1 for i in data["outlier_dist"] if i == 0])
+            outlier_hist = np.insert(outlier_hist, 0, zero_outlier_subspaces)
+            outlier_hist = outlier_hist / data["subspace_total"]
+
+            f, ax = plt.subplots(1, figsize=(4, 2))
+            x_locs = np.arange(BIN_NUM + 1)
+
+            width = 0.3
+            bar = ax.bar(x_locs, outlier_hist, width)
+            ax.set_xticks(x_locs)
+            ax.set_xticklabels([i/10 for i in range(11)])
+            ax.xaxis.set_tick_params(labelsize=10)
+            # ax.legend(loc=[0.305, 1.01], ncol=2)
+            logger.info(dataset)
+            ax.set_ylabel("Subspaces Percentage")
+            ax.set_xlabel("(Outliers in a subspace)/(Total Outliers)")
+            ax.set_title()
+            autolabel(ax, bar, 2)
+            plt.savefig(pp, format='pdf', bbox_inches="tight")
+
+        pp.close()
+        plt.close("all")
+        logger.info(f"File name {file_name}")
 
 if __name__ == '__main__':
-    point_count_per_dim()
+    plot_outlier_per_subspace_hist()
+    # outliers_per_subspace()
