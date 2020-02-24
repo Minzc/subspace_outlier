@@ -48,39 +48,31 @@ def outlier_correlation_subspace():
             X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
 
         model_outputs = []
+        subspace_idx = []
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
                 model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
+                subspace_idx.append(i)
 
         logger.info(f"Total model {len(model_outputs)}")
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
                                             ("RANK", Aggregator.count_rank_threshold, 0.10),
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
-            outliers_per_subspace = [np.array(aggregator([i, ], threshold)) for i in model_outputs]
-            indexs = np.array(range(X_gpu_tensor.shape[0]))
-            jaccards = []
-            for list_1, list_2 in itertools.combinations(outliers_per_subspace, 2):
-                list_1 = set(indexs[list_1 > 0].tolist())
-                list_2 = set(indexs[list_2 > 0].tolist())
-                jaccard = len(list_1 & list_2) / len(list_1 | list_2)
-                logger.info(f"Instance 1 {len(list_1)}")
-                logger.info(f"Instance 2 {len(list_2)}")
-                logger.info(f"Jaccard {jaccard}")
-                jaccards.append(jaccard)
+            outlier_idx = {idx: [] for idx, y in enumerate(Y) if y == 1}
+            outliers_per_subspace = {idx: aggregator([i, ], threshold) for idx, i in enumerate(model_outputs)}
+            for subspace_idx, outliers in outliers_per_subspace.items():
+                for outlier in outliers:
+                    outlier_idx[outlier].append(subspace_idx)
+            not_covered_outliers = {i for i, subspaces in outlier_idx.items() if len(subspaces) > 0}
+            logger.info(f"Detected outliers {len(not_covered_outliers)}")
 
-            outlier_num_per_subspace = []
-            for i in model_outputs:
-                y_scores = np.array(aggregator([i, ], threshold))
-                outlier_num_per_subspace.append(int(np.sum(y_scores[Y == 1])))
-            outputs[f"{name}_{threshold}"][dataset] = {
-                "jaccard_dist": jaccards
-            }
 
-    output_file = f"{model}_outliers_correlation_subspace.json"
-    with open(output_file, "w") as w:
-        w.write(f"{json.dumps(outputs)}\n")
-    logger.info(f"Output file {output_file}")
+
+    # output_file = f"{model}_outliers_correlation_subspace.json"
+    # with open(output_file, "w") as w:
+    #     w.write(f"{json.dumps(outputs)}\n")
+    # logger.info(f"Output file {output_file}")
 
 
 if __name__ == '__main__':
