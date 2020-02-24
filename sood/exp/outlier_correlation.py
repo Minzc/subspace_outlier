@@ -59,11 +59,12 @@ def outlier_correlation_subspace():
                                             ("RANK", Aggregator.count_rank_threshold, 0.10),
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
-            outlier_idx = {idx: [] for idx, y in enumerate(Y) if y == 1}
+            outlier_idx = {int(idx): [] for idx, y in enumerate(Y) if y == 1}
             outliers_per_subspace = {idx: aggregator([i, ], threshold) for idx, i in enumerate(model_outputs)}
             for subspace_idx, outliers in outliers_per_subspace.items():
                 for outlier in outliers:
-                    outlier_idx[outlier].append(subspace_idx)
+                    if Y[outlier] == 1:
+                        outlier_idx[outlier].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outlier_idx.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{_X.shape[0]}")
 
