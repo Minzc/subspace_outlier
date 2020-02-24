@@ -25,6 +25,7 @@ from sood.log import getLogger
 
 logger = getLogger(__name__)
 
+
 def outlier_correlation_subspace():
     import json
     outputs = defaultdict(dict)
@@ -56,18 +57,17 @@ def outlier_correlation_subspace():
                                             ("RANK", Aggregator.count_rank_threshold, 0.10),
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
-            outliers_per_subspace = [aggregator([i, ], threshold) for i in model_outputs]
-            indexs = np.array(range(len(X_gpu_tensor.shape[0])))
+            outliers_per_subspace = [np.array(aggregator([i, ], threshold)) for i in model_outputs]
+            indexs = np.array(range(X_gpu_tensor.shape[0]))
             jaccards = []
-            for list_1, list_2 in itertools.combinations(outliers_per_subspace):
+            for list_1, list_2 in itertools.combinations(outliers_per_subspace, 2):
                 list_1 = set(indexs[list_1 > 0].tolist())
                 list_2 = set(indexs[list_2 > 0].tolist())
-                jaccard = (list_1 & list_2) / (list_1 | list_2)
+                jaccard = len(list_1 & list_2) / len(list_1 | list_2)
                 logger.info(f"Instance 1 {len(list_1)}")
                 logger.info(f"Instance 2 {len(list_2)}")
                 logger.info(f"Jaccard {jaccard}")
                 jaccards.append(jaccard)
-
 
             outlier_num_per_subspace = []
             for i in model_outputs:
@@ -81,6 +81,7 @@ def outlier_correlation_subspace():
     with open(output_file, "w") as w:
         w.write(f"{json.dumps(outputs)}\n")
     logger.info(f"Output file {output_file}")
+
 
 if __name__ == '__main__':
     outlier_correlation_subspace()
