@@ -65,9 +65,7 @@ def outlier_correlation_subspace():
                 for outlier in outliers:
                     outlier_idx[outlier].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outlier_idx.items() if len(subspaces) > 0}
-            logger.info(f"Detected outliers {len(not_covered_outliers)}")
-
-
+            logger.info(f"Detected outliers {len(not_covered_outliers)}/{_X.shape[0]}")
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
     # with open(output_file, "w") as w:
