@@ -85,12 +85,14 @@ def outlier_correlation_subspace():
                 selected_subspaces.append(selected_subspace_id)
 
             for i in selected_subspaces:
-                print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(subspace_to_outlier[i])}")
+                print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(_subspace_to_outlier[i])}")
+            outputs[f"{aggregator}_{threshold}"][dataset] = [(subspace_idx_to_feautres[i], subspace_to_outlier[i])
+                                                             for i in selected_subspaces]
 
-    # output_file = f"{model}_outliers_correlation_subspace.json"
-    # with open(output_file, "w") as w:
-    #     w.write(f"{json.dumps(outputs)}\n")
-    # logger.info(f"Output file {output_file}")
+    output_file = f"{model}_outliers_correlation_subspace.json"
+    with open(output_file, "w") as w:
+        w.write(f"{json.dumps(outputs)}\n")
+    logger.info(f"Output file {output_file}")
 
 
 if __name__ == '__main__':
