@@ -86,9 +86,10 @@ def outlier_subspace_jump_path():
             selected_subspaces = []
             while len(covered_outliers) != detected_outliers_num:
                 selected_subspace_id, outliers = sorted(subspace_to_outlier.items(),
-                                                        key=lambda x: (len(outliers[1] & covered_outliers) > 0,
-                                                                       len(outliers[1] - covered_outliers)),
+                                                        key=lambda x: (len(x[1] & covered_outliers) > 0,
+                                                                       len(x[1] - covered_outliers)),
                                                         reverse=True)[0]
+                print(f"Selected Subspace {len(outliers & covered_outliers)}")
                 covered_outliers |= outliers
                 selected_subspaces.append(selected_subspace_id)
 
