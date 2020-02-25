@@ -77,7 +77,7 @@ def outlier_correlation_subspace():
             selected_subspaces = []
             while len(not_covered_outliers) > 0:
                 _tmp = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)
-                print(f"{_tmp[0]} {_tmp[1]}")
+                print(f"{len(_tmp[0][1])} {len(_tmp[1][1])}")
                 selected_subspace = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
                 covered_outliers = selected_subspace[1]
                 not_covered_outliers = not_covered_outliers - covered_outliers
