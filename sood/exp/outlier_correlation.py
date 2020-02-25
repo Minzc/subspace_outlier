@@ -89,9 +89,12 @@ def outlier_correlation_subspace():
                 print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(_subspace_to_outlier[i])}")
             print(f"{len(selected_subspaces)}/{len(model_outputs)}")
             outputs[f"{aggregator}_{threshold}"][dataset] = {
-                "select_subspace": [(subspace_idx_to_feautres[i], list(_subspace_to_outlier[i])) for i in selected_subspaces],
+                "select_subspace": [(subspace_idx_to_feautres[i], list(_subspace_to_outlier[i])) for i in
+                                    selected_subspaces],
                 "outliers": not_covered_outliers_num,
-                "total_subspace": len(model_outputs)
+                "total_subspace": len(model_outputs),
+                "total_outliers": outlier_num,
+                "dimension": len(feature_index)
             }
 
     output_file = f"{model}_outliers_correlation_subspace.json"
@@ -100,5 +103,27 @@ def outlier_correlation_subspace():
     logger.info(f"Output file {output_file}")
 
 
+def plot_correlation():
+    model = "knn"
+    input_file = f"{model}_outliers_correlation_subspace.json"
+    with open(input_file) as f:
+        obj = json.loads(f.readlines()[0])
+
+    for aggregator_threshold, data in obj.items():
+        aggregator, threshold = aggregator_threshold.split("_")
+        print("=" * 20)
+        print(f"{aggregator} {threshold}")
+        print("=" * 20)
+        for dataset, exp_rst in data.items():
+            jaccards = []
+            for i, j in itertools.combinations(exp_rst['select_subspaces'], 2):
+                jaccards.append(
+                    len(set(i[1]) & set(j[1])) / len(set(i[1]) | set(j[1]))
+                )
+            print(
+                f"{dataset} & {exp_rst['outliers']}/{exp_rst['total_outliers']} & {len(exp_rst['select_subspace'])} & {np.mean(jaccards)}/{np.min(jaccards)}/{np.max(jaccards)}")
+
+
 if __name__ == '__main__':
-    outlier_correlation_subspace()
+    # outlier_correlation_subspace()
+    plot_correlation()
