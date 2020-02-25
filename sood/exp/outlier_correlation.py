@@ -48,11 +48,11 @@ def outlier_correlation_subspace():
             X_gpu_tensor = GKE_GPU.convert_to_tensor(_X)
 
         model_outputs = []
-        subspace_idx = []
+        subspace_idx_to_feautres = []
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
                 model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
-                subspace_idx.append(i)
+                subspace_idx_to_feautres.append(i)
 
         logger.info(f"Total model {len(model_outputs)}")
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
@@ -64,6 +64,7 @@ def outlier_correlation_subspace():
 
             for subspace_idx, outliers in outliers_in_each_subspace.items():
                 for point_idx, if_outlier in enumerate(outliers):
+                    print(if_outlier, Y[point_idx])
                     if if_outlier > 0 and Y[point_idx] == 1:
                         outliers_subspaces[point_idx].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outliers_subspaces.items() if len(subspaces) > 0}
@@ -78,7 +79,7 @@ def outlier_correlation_subspace():
                 selected_subspaces.append(selected_subspace[0])
             print(f"Number of selected subspaces {len(selected_subspaces)}")
             for i in selected_subspaces:
-                print(f"Features {subspace_idx[i]}")
+                print(f"Features {subspace_idx_to_feautres[i]}")
 
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
