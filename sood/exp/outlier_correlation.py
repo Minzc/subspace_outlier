@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 def outlier_correlation_subspace():
     import json
     outputs = defaultdict(dict)
-    model = 'knn'
+    model = 'gke'
 
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
@@ -104,7 +104,7 @@ def outlier_correlation_subspace():
 
 
 def plot_correlation():
-    model = "knn"
+    model = "gke"
     input_file = f"{model}_outliers_correlation_subspace.json"
     with open(input_file) as f:
         obj = json.loads(f.readlines()[0])
@@ -133,5 +133,5 @@ def plot_correlation():
 
 
 if __name__ == '__main__':
-    # outlier_correlation_subspace()
+    outlier_correlation_subspace()
     plot_correlation()
