@@ -53,7 +53,7 @@ def outlier_correlation_subspace():
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
                 model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
-                subspace_idx_to_feautres.append(i.tolist())
+                subspace_idx_to_feautres.append([int(j) for j in i])
 
         logger.info(f"Total model {len(model_outputs)}")
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
