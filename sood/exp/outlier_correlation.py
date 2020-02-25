@@ -71,7 +71,7 @@ def outlier_correlation_subspace():
                 subspace_to_outlier[subspace_id] = detected_outliers
                 for detected_outlier in detected_outliers:
                     outliers_to_subspaces[detected_outlier].add(subspace_id)
-            _subspace_to_outlier = {i: copy.copy(j) for i, j in subspace_to_outlier.items()}
+            _subspace_to_outlier = {i: copy.deepcopy(j) for i, j in subspace_to_outlier.items()}
 
             not_covered_outliers = {i for i, subspaces in outliers_to_subspaces.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
@@ -86,7 +86,7 @@ def outlier_correlation_subspace():
 
             for i in selected_subspaces:
                 print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(_subspace_to_outlier[i])}")
-            outputs[f"{aggregator}_{threshold}"][dataset] = [(subspace_idx_to_feautres[i], subspace_to_outlier[i])
+            outputs[f"{aggregator}_{threshold}"][dataset] = [(subspace_idx_to_feautres[i], _subspace_to_outlier[i])
                                                              for i in selected_subspaces]
 
     output_file = f"{model}_outliers_correlation_subspace.json"
