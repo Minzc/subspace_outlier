@@ -38,8 +38,8 @@ def outlier_correlation_subspace():
         logger.info(f"             Dataset {dataset}             ")
         logger.info("=" * 50)
         _X, Y = DataLoader.load(dataset)
-        outlier_num, inlier_num = np.sum(Y == 1), np.sum(Y == 0)
-        feature_index = np.array([i for i in range(_X.shape[1])])
+        outlier_num = np.sum(Y == 1)
+        feature_index = np.array(range(_X.shape[1]))
         if model == "knn":
             mdl = kNN(max(10, int(np.floor(0.03 * _X.shape[0]))), Normalize.ZSCORE)
             X_gpu_tensor = _X
@@ -61,12 +61,13 @@ def outlier_correlation_subspace():
                                             ("STD", Aggregator.count_std_threshold, 2)]:
             outlier_idx = {int(idx): [] for idx, y in enumerate(Y) if y == 1}
             outliers_per_subspace = {idx: aggregator([i, ], threshold) for idx, i in enumerate(model_outputs)}
+
             for subspace_idx, outliers in outliers_per_subspace.items():
-                for outlier in outliers:
-                    if Y[outlier] == 1:
-                        outlier_idx[outlier].append(subspace_idx)
+                for point_idx, if_outlier in enumerate(outliers):
+                    if if_outlier > 0 and Y[point_idx] == 1:
+                        outlier_idx[point_idx].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outlier_idx.items() if len(subspaces) > 0}
-            logger.info(f"Detected outliers {len(not_covered_outliers)}/{_X.shape[0]}")
+            logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
     # with open(output_file, "w") as w:
