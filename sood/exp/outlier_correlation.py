@@ -68,12 +68,17 @@ def outlier_correlation_subspace():
                         outliers_subspaces[point_idx].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outliers_subspaces.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
+            selected_subspaces = []
             while len(not_covered_outliers) > 0:
                 selected_subspace = sorted(outliers_in_each_subspace.items(), key=lambda x: x[1], reverse=True)[0]
                 print(f"Number of outliers {len(selected_subspace[1])}")
                 covered_outliers = selected_subspace[1]
                 not_covered_outliers = not_covered_outliers - covered_outliers
-                outliers_in_each_subspace = {i: (j - covered_outliers) in outliers_in_each_subspace.items()}
+                outliers_in_each_subspace = {i: (j - covered_outliers) for i, j in outliers_in_each_subspace.items()}
+                selected_subspaces.append(selected_subspace[0])
+            print(f"Number of selected subspaces {len(selected_subspaces)}")
+            for i in selected_subspaces:
+                print(f"Features {subspace_idx[i]}")
 
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
