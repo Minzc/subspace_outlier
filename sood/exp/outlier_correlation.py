@@ -53,7 +53,7 @@ def outlier_correlation_subspace():
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
                 model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
-                subspace_idx_to_feautres.append(i)
+                subspace_idx_to_feautres.append(i.tolist())
 
         logger.info(f"Total model {len(model_outputs)}")
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
@@ -74,20 +74,23 @@ def outlier_correlation_subspace():
             _subspace_to_outlier = {i: copy.deepcopy(j) for i, j in subspace_to_outlier.items()}
 
             not_covered_outliers = {i for i, subspaces in outliers_to_subspaces.items() if len(subspaces) > 0}
+            not_covered_outliers_num = len(not_covered_outliers)
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
             selected_subspaces = []
             while len(not_covered_outliers) > 0:
                 _tmp = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)
                 selected_subspace_id, covered_outliers = \
-                sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
+                    sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
                 not_covered_outliers = not_covered_outliers - covered_outliers
                 subspace_to_outlier = {i: (j - covered_outliers) for i, j in subspace_to_outlier.items()}
                 selected_subspaces.append(selected_subspace_id)
 
             for i in selected_subspaces:
                 print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(_subspace_to_outlier[i])}")
-            outputs[f"{aggregator}_{threshold}"][dataset] = [(subspace_idx_to_feautres[i], _subspace_to_outlier[i])
-                                                             for i in selected_subspaces]
+            outputs[f"{aggregator}_{threshold}"][dataset] = {
+                "select_subspace": [(subspace_idx_to_feautres[i], _subspace_to_outlier[i]) for i in selected_subspaces],
+                "outliers": not_covered_outliers_num
+            }
 
     output_file = f"{model}_outliers_correlation_subspace.json"
     with open(output_file, "w") as w:
