@@ -60,7 +60,9 @@ def outlier_correlation_subspace():
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
             outliers_subspaces = {int(idx): [] for idx, y in enumerate(Y) if y == 1}
-            outliers_in_each_subspace = {idx: set(aggregator([i, ], threshold)) for idx, i in enumerate(model_outputs)}
+            outliers_in_each_subspace = {idx: {point_idx for point_idx, if_outlier in enumerate(aggregator([i, ], threshold))
+                                               if if_outlier == True}
+                                         for idx, i in enumerate(model_outputs)}
 
             for subspace_idx, outliers in outliers_in_each_subspace.items():
                 for point_idx, if_outlier in enumerate(outliers):
