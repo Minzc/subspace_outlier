@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import copy
 import itertools
 from collections import defaultdict
 from itertools import combinations
@@ -70,7 +71,7 @@ def outlier_correlation_subspace():
                 subspace_to_outlier[subspace_id] = detected_outliers
                 for detected_outlier in detected_outliers:
                     outliers_to_subspaces[detected_outlier].add(subspace_id)
-            _subspace_to_outlier = {i: j for i, j in subspace_to_outlier.items()}
+            _subspace_to_outlier = {i: copy.copy(j) for i, j in subspace_to_outlier.items()}
 
             not_covered_outliers = {i for i, subspaces in outliers_to_subspaces.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
