@@ -89,7 +89,8 @@ def outlier_correlation_subspace():
                 print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(_subspace_to_outlier[i])}")
             outputs[f"{aggregator}_{threshold}"][dataset] = {
                 "select_subspace": [(subspace_idx_to_feautres[i], list(_subspace_to_outlier[i])) for i in selected_subspaces],
-                "outliers": not_covered_outliers_num
+                "outliers": not_covered_outliers_num,
+                "total_subspace": len(model_outputs)
             }
 
     output_file = f"{model}_outliers_correlation_subspace.json"
