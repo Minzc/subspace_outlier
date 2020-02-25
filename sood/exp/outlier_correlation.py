@@ -80,7 +80,7 @@ def outlier_correlation_subspace():
             while len(not_covered_outliers) > 0:
                 _tmp = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)
                 selected_subspace_id, covered_outliers = \
-                    sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
+                sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
                 not_covered_outliers = not_covered_outliers - covered_outliers
                 subspace_to_outlier = {i: (j - covered_outliers) for i, j in subspace_to_outlier.items()}
                 selected_subspaces.append(selected_subspace_id)
@@ -120,14 +120,16 @@ def plot_correlation():
                 jaccards.append(
                     len(set(i[1]) & set(j[1])) / len(set(i[1]) | set(j[1]))
                 )
-            mean_jaccard = np.mean(jaccards)
-            min_jaccard = np.min(jaccards)
-            max_jaccard = np.max(jaccards)
+            mean_jaccard = np.mean(jaccards) if len(jaccards) > 0 else 0
+            min_jaccard = np.min(jaccards) if len(jaccards) > 0 else 0
+            max_jaccard = np.max(jaccards) if len(jaccards) > 0 else 0
             total_outliers = exp_rst["total_outliers"]
             covered_outliers = exp_rst['outliers']
             select_subspace_num = len(exp_rst['select_subspace'])
             total_subspaces = exp_rst["total_subspace"]
-            print(f"{dataset} & {covered_outliers}/{total_outliers} & {select_subspace_num}/{total_subspaces} & {mean_jaccard:.2f}/{min_jaccard:.2f}/{max_jaccard:.2f} \\\\n")
+            print(
+                f"{dataset} & {covered_outliers}/{total_outliers} & {select_subspace_num}/{total_subspaces} & {mean_jaccard:.2f}/{min_jaccard:.2f}/{max_jaccard:.2f} \\\\n")
+            print("\hline")
 
 
 if __name__ == '__main__':
