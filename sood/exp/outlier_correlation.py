@@ -64,7 +64,7 @@ def outlier_correlation_subspace():
 
             for subspace_idx, outliers in outliers_in_each_subspace.items():
                 for point_idx, if_outlier in enumerate(outliers):
-                    print(if_outlier, Y[point_idx])
+                    print(point_idx, if_outlier, Y[point_idx])
                     if if_outlier > 0 and Y[point_idx] == 1:
                         outliers_subspaces[point_idx].append(subspace_idx)
             not_covered_outliers = {i for i, subspaces in outliers_subspaces.items() if len(subspaces) > 0}
