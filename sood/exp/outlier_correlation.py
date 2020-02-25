@@ -93,7 +93,7 @@ def outlier_correlation_subspace():
                                     selected_subspaces],
                 "outliers": not_covered_outliers_num,
                 "total_subspace": len(model_outputs),
-                "total_outliers": outlier_num,
+                "total_outliers": int(outlier_num),
                 "dimension": len(feature_index)
             }
 
