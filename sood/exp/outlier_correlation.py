@@ -116,14 +116,20 @@ def plot_correlation():
         print("=" * 20)
         for dataset, exp_rst in data.items():
             jaccards = []
-            for i, j in itertools.combinations(exp_rst['select_subspaces'], 2):
+            for i, j in itertools.combinations(exp_rst['select_subspace'], 2):
                 jaccards.append(
                     len(set(i[1]) & set(j[1])) / len(set(i[1]) | set(j[1]))
                 )
-            print(
-                f"{dataset} & {exp_rst['outliers']}/{exp_rst['total_outliers']} & {len(exp_rst['select_subspace'])} & {np.mean(jaccards)}/{np.min(jaccards)}/{np.max(jaccards)}")
+            mean_jaccard = np.mean(jaccards)
+            min_jaccard = np.min(jaccards)
+            max_jaccard = np.max(jaccards)
+            total_outliers = exp_rst["total_outliers"]
+            covered_outliers = exp_rst['outliers']
+            select_subspace_num = len(exp_rst['select_subspace'])
+            total_subspaces = exp_rst["total_subspace"]
+            print(f"{dataset} & {covered_outliers}/{total_outliers} & {select_subspace_num}/{total_subspaces} & {mean_jaccard:.2f}/{min_jaccard:.2f}/{max_jaccard:.2f} \\\\n")
 
 
 if __name__ == '__main__':
-    outlier_correlation_subspace()
+    # outlier_correlation_subspace()
     plot_correlation()
