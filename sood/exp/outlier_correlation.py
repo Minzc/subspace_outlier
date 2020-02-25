@@ -59,7 +59,7 @@ def outlier_correlation_subspace():
                                             ("RANK", Aggregator.count_rank_threshold, 0.10),
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
-            outliers_to_subspaces = {int(idx): set() for idx, y in enumerate(Y) if y == 1}
+            outliers_to_subspaces = defaultdict(set)
             subspace_to_outlier = {}
             for subspace_id, model_output in enumerate(model_outputs):
                 detected_outliers = {
@@ -70,22 +70,21 @@ def outlier_correlation_subspace():
                 subspace_to_outlier[subspace_id] = detected_outliers
                 for detected_outlier in detected_outliers:
                     outliers_to_subspaces[detected_outlier].add(subspace_id)
-            subspace_to_outlier_number = {i:len(j) for i, j in subspace_to_outlier.items()}
+            _subspace_to_outlier = {i: j for i, j in subspace_to_outlier.items()}
 
             not_covered_outliers = {i for i, subspaces in outliers_to_subspaces.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
             selected_subspaces = []
             while len(not_covered_outliers) > 0:
                 _tmp = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)
-                print(f"{len(_tmp[0][1])} {len(_tmp[1][1])}")
-                selected_subspace = sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
-                covered_outliers = selected_subspace[1]
+                selected_subspace_id, covered_outliers = \
+                sorted(subspace_to_outlier.items(), key=lambda x: len(x[1]), reverse=True)[0]
                 not_covered_outliers = not_covered_outliers - covered_outliers
                 subspace_to_outlier = {i: (j - covered_outliers) for i, j in subspace_to_outlier.items()}
-                selected_subspaces.append(selected_subspace[0])
-            print(f"Number of selected subspaces {len(selected_subspaces)}")
+                selected_subspaces.append(selected_subspace_id)
+
             for i in selected_subspaces:
-                print(f"Features {subspace_idx_to_feautres[i]} Outliers {subspace_to_outlier_number[i]}")
+                print(f"Features {subspace_idx_to_feautres[i]} Outliers {len(subspace_to_outlier[i])}")
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
     # with open(output_file, "w") as w:
