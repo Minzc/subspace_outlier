@@ -59,15 +59,22 @@ def outlier_correlation_subspace():
                                             ("RANK", Aggregator.count_rank_threshold, 0.10),
                                             ("STD", Aggregator.count_std_threshold, 1),
                                             ("STD", Aggregator.count_std_threshold, 2)]:
-            outlier_idx = {int(idx): [] for idx, y in enumerate(Y) if y == 1}
-            outliers_per_subspace = {idx: aggregator([i, ], threshold) for idx, i in enumerate(model_outputs)}
+            outliers_subspaces = {int(idx): [] for idx, y in enumerate(Y) if y == 1}
+            outliers_in_each_subspace = {idx: set(aggregator([i, ], threshold)) for idx, i in enumerate(model_outputs)}
 
-            for subspace_idx, outliers in outliers_per_subspace.items():
+            for subspace_idx, outliers in outliers_in_each_subspace.items():
                 for point_idx, if_outlier in enumerate(outliers):
                     if if_outlier > 0 and Y[point_idx] == 1:
-                        outlier_idx[point_idx].append(subspace_idx)
-            not_covered_outliers = {i for i, subspaces in outlier_idx.items() if len(subspaces) > 0}
+                        outliers_subspaces[point_idx].append(subspace_idx)
+            not_covered_outliers = {i for i, subspaces in outliers_subspaces.items() if len(subspaces) > 0}
             logger.info(f"Detected outliers {len(not_covered_outliers)}/{outlier_num}")
+            while len(not_covered_outliers) > 0:
+                selected_subspace = sorted(outliers_in_each_subspace.items(), key=lambda x: x[1], reverse=True)[0]
+                print(f"Number of outliers {len(selected_subspace[1])}")
+                covered_outliers = selected_subspace[1]
+                not_covered_outliers = not_covered_outliers - covered_outliers
+                outliers_in_each_subspace = {i: (j - covered_outliers) in outliers_in_each_subspace.items()}
+
 
     # output_file = f"{model}_outliers_correlation_subspace.json"
     # with open(output_file, "w") as w:
