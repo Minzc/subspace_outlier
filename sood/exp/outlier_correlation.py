@@ -88,12 +88,13 @@ def outlier_subspace_jump_path():
                 _tmp = sorted(subspace_to_outlier.items(), key=lambda x: (len(x[1] & covered_outliers) > 0,
                                                                        len(x[1] - covered_outliers)),
                                                         reverse=True)
+                _tmp = [(len(x[1] & covered_outliers), len(x[1] - covered_outliers))  for x in _tmp]
+                print(_tmp)
                 selected_subspace_id, outliers = sorted(subspace_to_outlier.items(),
                                                         key=lambda x: (len(x[1] & covered_outliers) > 0,
                                                                        len(x[1] - covered_outliers)),
                                                         reverse=True)[0]
                 print(f"Overlay Subspace {len(outliers & covered_outliers)} {len(covered_outliers)}")
-                print(_tmp)
                 covered_outliers |= outliers
                 selected_subspaces.append(selected_subspace_id)
 
