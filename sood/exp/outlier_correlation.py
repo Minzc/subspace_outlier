@@ -90,7 +90,7 @@ def outlier_subspace_jump_path():
                                                         reverse=True)
                 _tmp = [(len(x[1] & covered_outliers), len(x[1] - covered_outliers))  for x in _tmp]
                 print("1", _tmp)
-                print("2", [(len(x[1] & covered_outliers), len(x[1] - covered_outliers))  for x in subspace_to_outlier.items()])
+                print("2", [x[1]  for x in subspace_to_outlier.items()])
                 _outliers = set()
                 for j in subspace_to_outlier.values():
                     _outliers |= set(j)
