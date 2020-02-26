@@ -85,22 +85,16 @@ def outlier_subspace_jump_path():
             logger.info(f"Detected outliers {detected_outliers_num}/{outlier_num}")
             selected_subspaces = []
             while len(covered_outliers) != detected_outliers_num:
-                _outliers = set()
-                for j in subspace_to_outlier.values():
-                    _outliers |= set(j)
-                print("Outliers", _outliers)
-                print("Covered", covered_outliers)
-                _tmp = []
-                for x in subspace_to_outlier.items():
-                    _tmp.append(
-                        (len(x[1] & covered_outliers) > 0, len(x[1] - covered_outliers))
-                    )
-                print(_tmp)
+                selected_subspace_id, outliers = [
+                    i
+                    for i in
+                    sorted(subspace_to_outlier.items(),
+                           key=lambda x: (len(x[1] & covered_outliers) > 0,
+                                          len(x[1] - covered_outliers)),
+                           reverse=True)[0]
+                    if i[1] > 0
+                ][0]
 
-                selected_subspace_id, outliers = sorted(subspace_to_outlier.items(),
-                                                        key=lambda x: (len(x[1] & covered_outliers) > 0,
-                                                                       len(x[1] - covered_outliers)),
-                                                        reverse=True)[0]
                 print(f"Overlay Subspace {len(outliers & covered_outliers)} {len(covered_outliers)}")
                 covered_outliers |= outliers
                 selected_subspaces.append(selected_subspace_id)
