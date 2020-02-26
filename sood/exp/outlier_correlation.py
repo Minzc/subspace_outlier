@@ -46,7 +46,7 @@ def load_model_and_data(dataset, model):
 def outlier_subspace_jump_path():
     import json
     outputs = defaultdict(dict)
-    model = 'gke'
+    model = 'knn'
 
     for dataset in [Dataset.VOWELS, Dataset.WINE,
                     Dataset.BREASTW, Dataset.ANNTHYROID,
@@ -221,7 +221,7 @@ def plot_subspace_jump():
 
 
 def plot_correlation():
-    model = "gke"
+    model = "knn"
     input_file = f"{model}_outliers_correlation_subspace.json"
     with open(input_file) as f:
         obj = json.loads(f.readlines()[0])
@@ -252,5 +252,5 @@ def plot_correlation():
 if __name__ == '__main__':
     # outlier_correlation_subspace()
     # plot_correlation()
-    # outlier_subspace_jump_path()
+    outlier_subspace_jump_path()
     plot_subspace_jump()
