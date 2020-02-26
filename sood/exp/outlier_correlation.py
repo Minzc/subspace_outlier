@@ -85,17 +85,13 @@ def outlier_subspace_jump_path():
             logger.info(f"Detected outliers {detected_outliers_num}/{outlier_num}")
             selected_subspaces = []
             while len(covered_outliers) != detected_outliers_num:
-                _tmp = sorted(subspace_to_outlier.items(), key=lambda x: (len(x[1] & covered_outliers) > 0,
-                                                                       len(x[1] - covered_outliers)),
-                                                        reverse=True)
-                _tmp = [(len(x[1] & covered_outliers), len(x[1] - covered_outliers))  for x in _tmp]
-                print("1", _tmp)
-                print("2", [x[1]  for x in subspace_to_outlier.items()])
                 _outliers = set()
                 for j in subspace_to_outlier.values():
                     _outliers |= set(j)
                 print("Outliers", _outliers)
                 print("Covered", covered_outliers)
+                for i in subspace_to_outlier.values():
+                    print(i, covered_outliers, i - covered_outliers)
 
                 selected_subspace_id, outliers = sorted(subspace_to_outlier.items(),
                                                         key=lambda x: (len(x[1] & covered_outliers) > 0,
