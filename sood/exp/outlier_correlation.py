@@ -191,6 +191,35 @@ def outlier_correlation_subspace():
     logger.info(f"Output file {output_file}")
 
 
+def plot_subspace_jump():
+    model = "gke"
+    input_file = f"{model}_outliers_subspace_jump.json"
+    with open(input_file) as f:
+        obj = json.loads(f.readlines()[0])
+
+    for aggregator_threshold, data in obj.items():
+        aggregator, threshold = aggregator_threshold.split("_")
+        print("=" * 20)
+        print(f"{aggregator} {threshold}")
+        print("=" * 20)
+        for dataset, exp_rst in data.items():
+            jaccards = []
+            for i, j in itertools.combinations(exp_rst['select_subspace'], 2):
+                jaccards.append(
+                    len(set(i[1]) & set(j[1])) / len(set(i[1]) | set(j[1]))
+                )
+            mean_jaccard = np.mean(jaccards) if len(jaccards) > 0 else 0
+            min_jaccard = np.min(jaccards) if len(jaccards) > 0 else 0
+            max_jaccard = np.max(jaccards) if len(jaccards) > 0 else 0
+            total_outliers = exp_rst["total_outliers"]
+            covered_outliers = exp_rst['outliers']
+            select_subspace_num = len(exp_rst['select_subspace'])
+            total_subspaces = exp_rst["total_subspace"]
+            print(
+                f"{dataset} & {covered_outliers}/{total_outliers} & {select_subspace_num}/{total_subspaces} & {mean_jaccard:.2f}/{min_jaccard:.2f}/{max_jaccard:.2f} \\\\n")
+            print("\hline")
+
+
 def plot_correlation():
     model = "gke"
     input_file = f"{model}_outliers_correlation_subspace.json"
@@ -223,4 +252,5 @@ def plot_correlation():
 if __name__ == '__main__':
     # outlier_correlation_subspace()
     # plot_correlation()
-    outlier_subspace_jump_path()
+    # outlier_subspace_jump_path()
+    plot_subspace_jump()
