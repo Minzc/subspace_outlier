@@ -53,15 +53,6 @@ def outliers_per_subspace():
             outlier_num_per_subspace = []
             for selected_features, i in model_outputs:
                 y_scores = np.array(aggregator([i, ], threshold))
-                if int(np.sum(y_scores[Y == 1])) == 0:
-                    print("Outlier Score Before Aggregate", i[Y == 1])
-                    print("Inliter Score Before Aggregate", i[Y == 0])
-                    print("Outlier Score After Aggregate", y_scores[Y == 1])
-                    print("Inliter Score After Aggregate", y_scores[Y == 0])
-                    print("Selected Features", selected_features)
-                    print("Outlier Features", X_gpu_tensor[Y == 1, :][:, np.asarray(selected_features)])
-                    print("FP Features", X_gpu_tensor[y_scores == 1, :][:, np.asarray(selected_features)])
-                    print("Intlier Features", X_gpu_tensor[Y == 0, :][:, np.asarray(selected_features)])
 
                 outlier_num_per_subspace.append(int(np.sum(y_scores[Y == 1])))
             outputs[f"{name}_{threshold}"][dataset] = {
@@ -69,6 +60,12 @@ def outliers_per_subspace():
                 "outlier_total": int(outlier_num),
                 "subspace_total": len(model_outputs)
             }
+
+        total_score = Aggregator.count_rank_threshold(model_outputs)
+        for idx, i in enumerate(Y):
+            if i  == 1 and total_score[i] == 0:
+                print("FN Outliers", X_gpu_tensor[idx])
+        print("Inliers", X_gpu_tensor[Y == 0])
 
     output_file = f"{model}_outliers_per_subspace.json"
     with open(output_file, "w") as w:
