@@ -61,16 +61,18 @@ class Aggregator:
         return scores
 
     @staticmethod
-    def average(model_outputs):
+    def average(model_outputs, weights=None):
         # =================================
         # Large value means outlying
         # =================================
         scores = [0] * model_outputs[0].shape[0]
+        if weights == None:
+            weights = [1] * len(model_outputs)
         logger.debug(f"Score size {len(scores)}")
-        for model_output in model_outputs:
+        for mdl_idx, model_output in enumerate(model_outputs):
             for idx, score in enumerate(model_output):
                 assert np.isnan(scores[idx] + score) == False, (scores[idx], score, model_output)
-                scores[idx] += score
+                scores[idx] = scores[idx] + score * weights[mdl_idx]
 
         for i in range(len(scores)):
             scores[i] = scores[i] / len(model_outputs)

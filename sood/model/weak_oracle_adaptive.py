@@ -16,6 +16,26 @@ from sood.model.base_detectors import kNN
 logger = getLogger(__name__)
 
 
+def calculate_weights(global_rank_list, local_rank_list, selected_features, total_feature):
+    s_score = Similarity.pearson(global_rank_list, local_rank_list, if_weighted=True)  # Compute spearman correlation
+    # s_score = Similarity.spearman(global_rank_list, local_rank_list)  # Compute spearman correlation
+    choice_probability = [1] * total_feature
+    for f_idx in selected_features:
+        choice_probability[f_idx] += s_score
+    choice_probability = np.exp(choice_probability)
+    normalizer = sum(choice_probability)
+    choice_probability = choice_probability / normalizer
+    logger.info(f"Correlation {s_score}")
+    return choice_probability
+
+
+def get_global_rank_list(global_rank_list, model_outputs):
+    weights = [Similarity.pearson(global_rank_list, i, if_weighted=True) for i in model_outputs]
+    weights = [i if i > 0 else 0 for i in weights]
+    global_rank_list = np.array(Aggregator.average(model_outputs, weights))
+    return global_rank_list
+
+
 class OracleAdaptive(AbstractModel):
     NAME = "OracleAdaptive"
 
@@ -55,34 +75,32 @@ class OracleAdaptive(AbstractModel):
 
         for i in range(initial_count, self.ensemble_size):
             logger.info(f"Select features {selected_features}")
-            s_score = Similarity.pearson(global_rank_list, local_rank_list, if_weighted=True)  # Compute spearman correlation
 
-            choice_probability = [1] * total_feature
-            for f_idx in selected_features:
-                choice_probability[f_idx] += s_score
-            choice_probability = np.exp(choice_probability)
-            normalizer = sum(choice_probability)
-            choice_probability = choice_probability / normalizer
-            logger.info(f"Correlation {s_score}")
+            choice_probability = calculate_weights(global_rank_list, local_rank_list, selected_features, total_feature)
 
-            feature_size = np.random.randint(self.dim_start, self.dim_end)  # Randomly sample feature size
-            selected_features = np.random.choice(feature_index, feature_size,
-                                                 p=choice_probability, replace=False)  # Randomly select features
+            # ============================================================
+            # 1. Randomly sample feature size
+            # 2. Randomly select features
+            # ============================================================
+            feature_size = np.random.randint(self.dim_start, self.dim_end)
+            selected_features = np.random.choice(feature_index, feature_size, p=choice_probability, replace=False)
+            # selected_features = np.random.choice(feature_index, feature_size, replace=False)
+
             local_rank_list = self.mdl.fit(data_array[:, selected_features])
+            global_rank_list = get_global_rank_list(global_rank_list, model_outputs)
 
-            global_rank_list = np.array(self.aggregate_components(model_outputs))
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble Before {}".format(roc_auc))
-
+            logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
             local_roc = self.compute_roc_auc(np.array(self.aggregate_components([local_rank_list, ])), self.Y)
             logger.info(f"Local {local_roc}")
             rocs.append(local_roc)
             model_outputs.append(local_rank_list)
-            global_rank_list = np.array(self.aggregate_components(model_outputs))
+            global_rank_list = get_global_rank_list(global_rank_list, model_outputs)
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble After {}".format(roc_auc))
+            logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
             logger.info('-' * 50)
-            prev_correlation = s_score
         logger.info("Number of good subspace {}/{}".format(len(rocs), self.ensemble_size))
         logger.info("Maximum roc {}".format(max(rocs)))
         logger.info("Minimum roc {}".format(min(rocs)))
@@ -100,7 +118,7 @@ class OracleAdaptive(AbstractModel):
 
 
 def single_test():
-    dataset = Dataset.OPTDIGITS
+    dataset = Dataset.MNIST_ODDS
     aggregator = Aggregator.AVERAGE
     threshold = 0
 
@@ -128,63 +146,6 @@ def single_test():
     logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
     logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
     logger.info(f"====================================================")
-
-
-def batch_test():
-    import json
-    path_manager = PathManager()
-    ENSEMBLE_SIZE = 100
-    for dataset in [Dataset.ARRHYTHMIA, Dataset.MUSK, Dataset.MNIST_ODDS, Dataset.OPTDIGITS]:
-        for aggregator in [Aggregator.AVERAGE, Aggregator.AVERAGE_THRESHOLD, Aggregator.COUNT_STD_THRESHOLD,
-                           Aggregator.COUNT_RANK_THRESHOLD]:
-            for base_model in [kNN.NAME, ]:
-                # =======================================================================================
-                # Model
-                output_path = path_manager.get_batch_test_model_output(OracleAdaptive.NAME, aggregator, base_model,
-                                                                       "DEFAULT", dataset)
-                # =======================================================================================
-                with open(output_path, "w") as w:
-                    for threshold in [0, ]:
-                        X, Y = DataLoader.load(dataset)
-                        dim = X.shape[1]
-                        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-                        logger.info(f"{dataset} {aggregator} {threshold}")
-                        roc_aucs = []
-                        precision_at_ns = []
-                        # =======================================================================================
-                        # Model
-                        mdl = OracleAdaptive(2, dim / 4, ENSEMBLE_SIZE, aggregator, neigh, base_model, Y,
-                                             threshold)
-                        # =======================================================================================
-                        for _ in tqdm.trange(5):
-                            try:
-                                rst = mdl.run(X)
-                                # Throw exception if no satisfied subspaces are found
-                                roc_auc = mdl.compute_roc_auc(rst, Y)
-                                logger.info("Final ROC {}".format(roc_auc))
-                                precision_at_n = mdl.compute_precision_at_n(rst, Y)
-                                logger.info("Precision@n {}".format(precision_at_n))
-
-                                roc_aucs.append(roc_auc)
-                                precision_at_ns.append(precision_at_n)
-                            except Exception as e:
-                                logger.exception(e)
-                        logger.info(f"Exp Information {dataset} {aggregator} {threshold}")
-                        logger.info(f"Final Average ROC {np.mean(roc_aucs)}")
-                        logger.info(f"Final Precision@n {np.mean(precision_at_ns)}")
-                        logger.info(f"====================================================")
-                        output = {
-                            Consts.DATA: dataset,
-                            Consts.ROC_AUC: np.mean(roc_aucs),
-                            Consts.PRECISION_A_N: np.mean(precision_at_ns),
-                            Consts.AGGREGATE: aggregator,
-                            Consts.BASE_MODEL: base_model,
-                            Consts.START_DIM: 2,
-                            Consts.END_DIM: 1 / 4,
-                            Consts.ENSEMBLE_SIZE: ENSEMBLE_SIZE
-                        }
-                        w.write(f"{json.dumps(output)}\n")
-                        logger.info(f"Output file is {output_path}")
 
 
 if __name__ == '__main__':
