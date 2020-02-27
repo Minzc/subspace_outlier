@@ -42,8 +42,7 @@ def outliers_per_subspace():
         selected_features = []
         for l in range(1, len(feature_index) + 1):
             for i in combinations(feature_index, l):
-                model_outputs.append(mdl.fit(X_gpu_tensor[:, np.asarray(i)]))
-                selected_features.append(i)
+                model_outputs.append( (i, mdl.fit(X_gpu_tensor[:, np.asarray(i)])) )
 
         logger.info(f"Total model {len(model_outputs)}")
         for name, aggregator, threshold in [("RANK", Aggregator.count_rank_threshold, 0.05),
@@ -55,10 +54,13 @@ def outliers_per_subspace():
             for selected_features, i in model_outputs:
                 y_scores = np.array(aggregator([i, ], threshold))
                 if int(np.sum(y_scores[Y == 1])) == 0:
-                    print(y_scores[Y == 1])
-                    print(y_scores[Y == 0])
-                    print(X_gpu_tensor[Y == 1, np.asarray(selected_features)])
-                    print(X_gpu_tensor[Y == 0, np.asarray(selected_features)])
+                    print("Outlier Score Before Aggregate", i[Y == 1])
+                    print("Inliter Score Before Aggregate", i[Y == 0])
+                    print("Outlier Score After Aggregate", y_scores[Y == 1])
+                    print("Inliter Score After Aggregate", y_scores[Y == 0])
+                    print("Selected Features", selected_features)
+                    print("Outlier Features", X_gpu_tensor[Y == 1, :][:, np.asarray(selected_features)])
+                    print("Intlier Features", X_gpu_tensor[Y == 0, :][:, np.asarray(selected_features)])
 
                 outlier_num_per_subspace.append(int(np.sum(y_scores[Y == 1])))
             outputs[f"{name}_{threshold}"][dataset] = {
