@@ -34,6 +34,7 @@ def calculate_weights_new(global_rank_list, model_outputs, sampled_subspaces, to
         # Compute spearman correlation
         s_score = Similarity.pearson(global_rank_list, local_rank_list, if_weighted=True)
         for idx, f_idx in enumerate(sampled_subspaces[mdl_idx]):
+            # choice_probability[f_idx].append(s_score * sampled_feature_weigts[mdl_idx][idx])
             choice_probability[f_idx].append(s_score * sampled_feature_weigts[mdl_idx][idx])
     choice_probability = [np.mean(i) if i else 0 for i in choice_probability]
     choice_probability = np.exp(choice_probability)
@@ -74,8 +75,6 @@ class OracleAdaptive(AbstractModel):
         sampled_subspaces = []
         sampled_feature_weigts = []
 
-
-
         selected_features = feature_index
         sampled_subspaces.append(selected_features)
 
@@ -92,12 +91,12 @@ class OracleAdaptive(AbstractModel):
         model_outputs.append(local_rank_list)
         logger.debug(f"Outlier score shape: {local_rank_list.shape}")
 
-        global_rank_list_truth = np.array(Aggregator.average(model_outputs))
+        global_rank_list = np.array(Aggregator.average(model_outputs))
 
         for i in range(1, self.ensemble_size):
             logger.info(f"Select features {selected_features}")
 
-            choice_probability = calculate_weights_new(global_rank_list_truth, model_outputs, sampled_subspaces,
+            choice_probability = calculate_weights_new(global_rank_list, model_outputs, sampled_subspaces,
                                                        total_feature, sampled_feature_weigts)
 
             # ============================================================
@@ -118,7 +117,7 @@ class OracleAdaptive(AbstractModel):
             f_weights = f_weights / f_sum
             sampled_feature_weigts.append(f_weights)
 
-            global_rank_list = get_global_rank_list(global_rank_list_truth, model_outputs, self)
+            global_rank_list = get_global_rank_list(global_rank_list, model_outputs, self)
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble Before {}".format(roc_auc))
             logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
@@ -129,7 +128,7 @@ class OracleAdaptive(AbstractModel):
             if np.sum(local_rank_list) > 0:
                 model_outputs.append(local_rank_list)
 
-            global_rank_list = get_global_rank_list(global_rank_list_truth, model_outputs, self)
+            global_rank_list = get_global_rank_list(global_rank_list, model_outputs, self)
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble After {}".format(roc_auc))
             logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
@@ -140,8 +139,7 @@ class OracleAdaptive(AbstractModel):
 
         model_outputs = [self.mdl.fit(data_array[:, i]) for i in sampled_subspaces]
         model_outputs = [i for i in model_outputs if np.sum(i) > 0]
-        global_rank_list = Aggregator.average(model_outputs)
-        final_rst = get_global_rank_list(global_rank_list_truth, model_outputs, self)
+        final_rst = get_global_rank_list(global_rank_list, model_outputs, self)
         return final_rst
 
     def aggregate_components(self, model_outputs):
@@ -156,7 +154,7 @@ class OracleAdaptive(AbstractModel):
 
 
 def single_test():
-    dataset = Dataset.MNIST_ODDS
+    dataset = Dataset.BANK
     aggregator = Aggregator.AVERAGE_THRESHOLD
     threshold = 0
 
