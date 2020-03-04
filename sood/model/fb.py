@@ -137,4 +137,36 @@ def batch_test():
 
 
 if __name__ == '__main__':
-    batch_test()
+    from sood.data_process.data_loader import Dataset, DataLoader
+
+    ENSEMBLE_SIZE = 100
+    EXP_NUM = 1
+
+    X, Y = DataLoader.load(Dataset.MNIST_ODDS)
+    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+    X = X[:, np.std(X, axis=0) != 0]
+    dim = X.shape[1]
+
+    for start, end in [(2, int(dim / 4))]:
+        fb = FB(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME, Y, 0)
+
+        roc_aucs = []
+        precision_at_ns = []
+
+        for i in range(EXP_NUM):
+            rst = fb.run(X)
+
+            logger.info(f"Ensemble output {rst}")
+            logger.info(f"Y {Y}")
+
+            roc_auc = fb.compute_roc_auc(rst, Y)
+            roc_aucs.append(roc_auc)
+
+            precision_at_n = fb.compute_precision_at_n(rst, Y)
+            precision_at_ns.append(precision_at_n)
+
+        logger.info(
+            f""" Model: {fb.info()} ROC AUC {np.mean(roc_aucs)} Std: {np.std(roc_aucs)} Precision@n {np.mean(precision_at_ns)} Std: {np.std(precision_at_ns)}""")
+
+    logger.info("=" * 50)
+

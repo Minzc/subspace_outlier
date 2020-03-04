@@ -10,7 +10,7 @@ from sood.log import getLogger
 from sood.model.abs_model import AbstractModel, Aggregator
 from sood.util import Similarity, PathManager, Consts
 import numpy as np
-from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import f_classif, SelectKBest
 from sood.model.base_detectors import kNN
 
 logger = getLogger(__name__)
@@ -47,8 +47,6 @@ def get_global_rank_list(global_rank_list, model_outputs, model):
         weights = [Similarity.pearson(global_rank_list, i, if_weighted=True) for i in model_outputs]
         weights = [i if i > 0 else 0 for i in weights]
         global_rank_list = np.array(Aggregator.average(model_outputs, weights))
-        # roc_auc = model.compute_roc_auc(global_rank_list, model.Y)
-        # logger.info(f"[DEBUG] Aggregation {i} {roc_auc}")
     return global_rank_list
 
 
@@ -70,39 +68,36 @@ class OracleAdaptive(AbstractModel):
         model_outputs = []
         total_feature = data_array.shape[1]
         feature_index = np.array([i for i in range(total_feature)])
-        initial_count = int(self.ensemble_size * 0.05)
+        # initial_count = int(self.ensemble_size * 0.05)
         selected_features = None
-        local_rank_list = None
         rocs = []
         sampled_subspaces = []
         sampled_feature_weigts = []
 
-        for i in range(initial_count):
-            # Randomly sample feature size
-            feature_size = np.random.randint(self.dim_start, self.dim_end)
-            # Randomly select features
-            selected_features = np.random.choice(feature_index, len(feature_index), replace=False)[:feature_size]
-            sampled_subspaces.append(selected_features)
-            logger.info(f"Selected Features {selected_features.shape}")
 
-            local_rank_list = self.mdl.fit(data_array[:, selected_features])
-            local_rank_list = np.array(Aggregator.count_std_threshold([local_rank_list, ], 2))
-            f_weights = f_classif(data_array[:, selected_features], local_rank_list)[0]
-            for i in f_weights:
-                assert i > 0
-            f_weights = f_weights / np.sum(f_weights)
-            sampled_feature_weigts.append(f_weights)
 
-            model_outputs.append(local_rank_list)
-            logger.debug(f"Outlier score shape: {local_rank_list.shape}")
+        selected_features = feature_index
+        sampled_subspaces.append(selected_features)
 
-        global_rank_list = np.array(Aggregator.average(model_outputs))
+        local_rank_list = self.mdl.fit(data_array[:, selected_features])
+        local_rank_list = np.array(Aggregator.count_std_threshold([local_rank_list, ], 2))
+        selector = SelectKBest(f_classif, k='all').fit(data_array[:, selected_features], local_rank_list)
+        f_weights = selector.scores_
+        f_weights[np.isnan(f_weights)] = 0
+        f_weights[np.isinf(f_weights)] = 0
+        f_sum = np.sum(f_weights)
+        f_weights = f_weights / f_sum
+        sampled_feature_weigts.append(f_weights)
 
-        for i in range(initial_count, self.ensemble_size):
+        model_outputs.append(local_rank_list)
+        logger.debug(f"Outlier score shape: {local_rank_list.shape}")
+
+        global_rank_list_truth = np.array(Aggregator.average(model_outputs))
+
+        for i in range(1, self.ensemble_size):
             logger.info(f"Select features {selected_features}")
 
-            # choice_probability = calculate_weights(global_rank_list, local_rank_list, selected_features, total_feature)
-            choice_probability = calculate_weights_new(global_rank_list, model_outputs, sampled_subspaces,
+            choice_probability = calculate_weights_new(global_rank_list_truth, model_outputs, sampled_subspaces,
                                                        total_feature, sampled_feature_weigts)
 
             # ============================================================
@@ -116,11 +111,14 @@ class OracleAdaptive(AbstractModel):
 
             local_rank_list = self.mdl.fit(data_array[:, selected_features])
             local_rank_list = np.array(Aggregator.count_std_threshold([local_rank_list, ], 2))
-            f_weights = f_classif(data_array[:, selected_features], local_rank_list)[0]
-            f_weights = f_weights / np.sum(f_weights)
+            f_weights = SelectKBest(f_classif, k='all').fit(data_array[:, selected_features], local_rank_list).scores_
+            f_weights[np.isnan(f_weights)] = 0
+            f_weights[np.isinf(f_weights)] = 0
+            f_sum = np.sum(f_weights)
+            f_weights = f_weights / f_sum
             sampled_feature_weigts.append(f_weights)
 
-            global_rank_list = get_global_rank_list(global_rank_list, model_outputs, self)
+            global_rank_list = get_global_rank_list(global_rank_list_truth, model_outputs, self)
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble Before {}".format(roc_auc))
             logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
@@ -131,7 +129,7 @@ class OracleAdaptive(AbstractModel):
             if np.sum(local_rank_list) > 0:
                 model_outputs.append(local_rank_list)
 
-            global_rank_list = get_global_rank_list(global_rank_list, model_outputs, self)
+            global_rank_list = get_global_rank_list(global_rank_list_truth, model_outputs, self)
             roc_auc = self.compute_roc_auc(global_rank_list, self.Y)
             logger.info("Ensemble After {}".format(roc_auc))
             logger.info(f"Precision@n {self.compute_precision_at_n(global_rank_list, self.Y)}")
@@ -143,7 +141,7 @@ class OracleAdaptive(AbstractModel):
         model_outputs = [self.mdl.fit(data_array[:, i]) for i in sampled_subspaces]
         model_outputs = [i for i in model_outputs if np.sum(i) > 0]
         global_rank_list = Aggregator.average(model_outputs)
-        final_rst = get_global_rank_list(global_rank_list, model_outputs, self)
+        final_rst = get_global_rank_list(global_rank_list_truth, model_outputs, self)
         return final_rst
 
     def aggregate_components(self, model_outputs):
@@ -163,6 +161,7 @@ def single_test():
     threshold = 0
 
     X, Y = DataLoader.load(dataset)
+    X = X[:, np.std(X, axis=0) != 0]
     dim = X.shape[1]
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
     ENSEMBLE_SIZE = 100

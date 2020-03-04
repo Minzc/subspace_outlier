@@ -34,21 +34,14 @@ class Uniform(AbstractModel):
         feature_index = np.array([i for i in range(total_features)])
         for i in range(self.ensemble_size):
             # Randomly sample feature size
-            while True:
-                selected_features = np.random.randint(2, size=total_features)
-                select_feature_num = np.sum(selected_features)
-                if select_feature_num < self.dim_end and select_feature_num > self.dim_start:
-                    break
+            feature_size = np.random.randint(self.dim_start, self.dim_end)
             # Randomly select features
-            logger.debug(f"Feature size: {select_feature_num}")
-            selected_features = feature_index[selected_features == 1]
-            logger.debug(f"Selected feature: {selected_features}")
+            selected_features = np.random.choice(feature_index, len(feature_index), replace=False)[:feature_size]
             _X = data_array[:, selected_features]
-            logger.debug(f"Selected X: {_X.shape}")
+            logger.info(f"Selected X: {_X.shape}")
             # Process selected dataset
             score = self.mdl.fit(_X)
             model_outputs.append(score)
-            logger.debug(f"Outlier score shape: {score.shape}")
         return model_outputs
 
     def aggregate_components(self, model_outputs):
@@ -65,16 +58,16 @@ class Uniform(AbstractModel):
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
 
-    ENSEMBLE_SIZE = 20
+    ENSEMBLE_SIZE = 100
     EXP_NUM = 1
-    PRECISION_AT_N = 10
 
-    X, Y = DataLoader.load(Dataset.MUSK)
-    dim = X.shape[1]
+    X, Y = DataLoader.load(Dataset.MNIST_ODDS)
     neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+    # X = X[:, np.std(X, axis=0) != 0]
+    dim = X.shape[1]
 
-    for start, end in [(1, int(dim / 2))]:
-        fb = Uniform(start, end, ENSEMBLE_SIZE, Aggregator.COUNT_RANK_THRESHOLD, neigh, kNN.NAME)
+    for start, end in [(2, int(dim / 4))]:
+        fb = Uniform(start, end, ENSEMBLE_SIZE, Aggregator.AVERAGE, neigh, kNN.NAME)
 
         start_ts = time.time()
         roc_aucs = []
@@ -83,13 +76,13 @@ if __name__ == '__main__':
         for i in range(EXP_NUM):
             rst = fb.run(X)
 
-            logger.debug(f"Ensemble output {rst}")
-            logger.debug(f"Y {Y}")
+            logger.info(f"Ensemble output {rst}")
+            logger.info(f"Y {Y}")
 
             roc_auc = fb.compute_roc_auc(rst, Y)
             roc_aucs.append(roc_auc)
 
-            precision_at_n = fb.compute_precision_at_n(rst, Y, PRECISION_AT_N)
+            precision_at_n = fb.compute_precision_at_n(rst, Y)
             precision_at_ns.append(precision_at_n)
 
         end_ts = time.time()

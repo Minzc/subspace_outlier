@@ -35,24 +35,32 @@ class Full(AbstractModel):
         return model_outputs
 
     def aggregate_components(self, model_outputs):
-        return Aggregator.average(model_outputs)
+        return Aggregator.average_threshold(model_outputs, 2)
+        # return Aggregator.average(model_outputs)
 
 
 if __name__ == '__main__':
     from sood.data_process.data_loader import Dataset, DataLoader
-    import scipy.io as sio
-    X, Y = DataLoader.load(Dataset.SPEECH)
+    for dataset in [Dataset.AD, Dataset.AID362, Dataset.BANK, Dataset.PROB, Dataset.U2R, Dataset.ARRHYTHMIA, Dataset.MNIST_ODDS,
+                    Dataset.MUSK, Dataset.OPTDIGITS, Dataset.SPEECH]:
+        X, Y = DataLoader.load(dataset)
 
-    # data = sio.loadmat("data/musk.mat")
-    # X_train = data['X'].astype('double')
-    # y_label = np.squeeze(data['y']).astype('int')
-    neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+        neigh = max(10, int(np.floor(0.03 * X.shape[0])))
+        X = X[:, np.std(X, axis=0) != 0]
 
-    # neigh = max(10, int(np.floor(0.03 * X.shape[0])))
-    full = Full(neigh, kNN.NAME)
-    rst = full.run(X)
-    logger.debug(f"Ensemble output {rst}")
-    roc_auc = full.compute_roc_auc(rst, Y)
-    logger.info(f"ROC AUC {roc_auc}")
-    precision_at_n = full.compute_precision_at_n(rst, Y)
-    logger.info(f"Precision at N {precision_at_n}")
+        full = Full(neigh, kNN.NAME)
+        rst = full.run(X)
+        logger.debug(f"Ensemble output {rst}")
+        roc_auc = full.compute_roc_auc(rst, Y)
+        logger.info(f"ROC AUC {roc_auc}")
+        precision_at_n = full.compute_precision_at_n(rst, Y)
+        logger.info(f"Precision at N {precision_at_n}")
+        correct = 0
+        total = 0
+        for idx, i in enumerate(rst):
+            if i > 0:
+                total += 1
+                if Y[idx] == 1:
+                    correct += 1
+        precision_at_n = full.compute_precision_at_n(rst, Y, total)
+        print(f"{dataset} Total {total} Correct {correct} Precision@n {precision_at_n}")

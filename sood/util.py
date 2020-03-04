@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 from typing import List
-
+from scipy.spatial.distance import cosine
 from pyod.utils import wpearsonr
 from scipy.stats import spearmanr
 import numpy as np
@@ -45,9 +45,14 @@ class Similarity:
         return spearmanr(g_rank, l_rank)[0]
 
     @staticmethod
-    def pearson(target_list, local_list, if_weighted: bool) -> float:
+    def pearson(target_list, local_list, if_weighted: bool, Y=None) -> float:
         # Sort in descending order
         target_outlying_idx = np.argsort(target_list)[::-1]
+
+        if Y is not None:
+            local_list_idx = np.argsort(local_list)[::-1]
+            print([(target_list[i], local_list[i], Y[i]) for i in target_outlying_idx])
+            print("Cosine", cosine(target_list, local_list))
 
         weights = [0] * target_outlying_idx.shape[0]
         for rank, idx in enumerate(target_outlying_idx):
@@ -62,6 +67,44 @@ class Similarity:
         if np.isnan(score) == True:
             return 0
         return score
+
+    @staticmethod
+    def cosine(target_list, local_list, Y = None):
+
+        sum_co = 0
+        u = 0
+        v = 0
+        for i in range(len(target_list)):
+            sum_co = sum_co + target_list[i] * local_list[i]
+            u = u + target_list[i] * target_list[i]
+            v = v + local_list[i] * local_list[i]
+        if Y is not None:
+            print(sum_co, np.sqrt(u), np.sqrt(v), sum_co / (np.sqrt(u) * np.sqrt(v)))
+            sum_co = 0
+            u = 0
+            v = 0
+            for i in range(len(Y)):
+                sum_co = sum_co + Y[i] * local_list[i]
+                u = u + Y[i] * Y[i]
+                v = v + local_list[i] * local_list[i]
+            print(sum_co, np.sqrt(u), np.sqrt(v), sum_co / (np.sqrt(u) * np.sqrt(v)))
+
+            target_outlying_idx = np.argsort(target_list)[::-1]
+            sum_co = 0
+            u = 0
+            v = 0
+            for rank, i in enumerate(target_outlying_idx):
+                sum_co = sum_co + target_list[i] * local_list[i] * 1/ (rank + 1)
+                u = u + target_list[i] * target_list[i] * 1/ (rank + 1)
+                v = v + local_list[i] * local_list[i] * 1/ (rank + 1)
+            print(sum_co, np.sqrt(u), np.sqrt(v), sum_co / (np.sqrt(u) * np.sqrt(v)))
+
+        return sum_co / (np.sqrt(u) * np.sqrt(v))
+        # dist = cosine(target_list, local_list)
+        # if np.isnan(dist):
+        #     dist = 1
+        # return 1 - dist
+
 
 class Normalize:
     ZSCORE = "zscore"
